@@ -6,12 +6,12 @@ from odoo import models
 class AccountTax(models.Model):
     _inherit = 'account.tax'
 
-    def tbai_is_subject_to_tax(self):
+    def tbai_is_subject_to_tax(self, **kwargs):
         s_iva_ns_tbai_maps = self.env["tbai.tax.map"].search(
             [('code', 'in', ("SNS", "BNS"))]
         )
         s_iva_ns_taxes = self.env["l10n.es.aeat.report"].get_taxes_from_templates(
-            s_iva_ns_tbai_maps.mapped("tax_template_ids")
+            s_iva_ns_tbai_maps.mapped("tax_template_ids"), **kwargs
         )
         return self not in s_iva_ns_taxes
 

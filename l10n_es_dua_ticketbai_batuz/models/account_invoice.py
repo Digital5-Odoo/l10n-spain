@@ -27,7 +27,7 @@ class AccountInvoice(models.Model):
                 [('code', '=', 'DUA')]
             )
             dua_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-                tbai_dua_map.mapped("tax_template_ids")
+                tbai_dua_map.mapped("tax_template_ids"), invoice_company_id=invoice.company_id.id
             )
             invoice.tbai_dua_invoice = (
                 invoice.tax_line_ids.filtered(lambda x: x.tax_id in dua_taxes))

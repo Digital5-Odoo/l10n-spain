@@ -266,11 +266,11 @@ class AccountInvoice(models.Model):
             [('code', 'in', ("RE", "IRPF"))]
         )
         exclude_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         for tax in self.tax_line_ids.filtered(
                 lambda x: x.tax_id not in exclude_taxes):
-            tax_subject_to = tax.tax_id.tbai_is_subject_to_tax()
+            tax_subject_to = tax.tax_id.tbai_is_subject_to_tax(invoice_company_id=self.company_id.id)
             not_subject_to_cause = \
                 not tax_subject_to and tax.tbai_get_value_causa() or ''
             is_exempted = tax_subject_to and tax.tax_id.tbai_is_tax_exempted() or False
@@ -488,7 +488,7 @@ class AccountInvoice(models.Model):
             [('code', '=', "IRPF")]
         )
         irpf_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         taxes = self.tax_line_ids.filtered(
             lambda tax: tax.tax_id in irpf_taxes)
@@ -533,7 +533,7 @@ class AccountInvoiceLine(models.Model):
     def tbai_get_value_importe_total(self):
         tbai_maps = self.env["tbai.tax.map"].search([('code', '=', "IRPF")])
         irpf_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         currency = self.invoice_id and self.invoice_id.currency_id or None
         price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)

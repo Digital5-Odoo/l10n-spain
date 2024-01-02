@@ -31,7 +31,7 @@ class AccountInvoiceTax(models.Model):
             [('code', '=', "RE")]
         )
         s_iva_re_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         lines = self.invoice_id.invoice_line_ids.filtered(
             lambda l: self.tax_id in l.invoice_line_tax_ids)
@@ -70,7 +70,7 @@ class AccountInvoiceTax(models.Model):
             [("code", "in", ("SNS", "SIE", "S", "SER"))]
         )
         taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         return self.tax_id in taxes
 
@@ -83,7 +83,7 @@ class AccountInvoiceTax(models.Model):
             [("code", "in", ("B", "BNS", "IEE", "SER"))]
         )
         taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         return self.tax_id in taxes
 
@@ -125,7 +125,7 @@ class AccountInvoiceTax(models.Model):
             [("code", "=", "ISP")]
         )
         isp_taxes = self.env['l10n.es.aeat.report'].get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
+            tbai_maps.mapped("tax_template_ids"), invoice_company_id=self.company_id.id
         )
         if self.tax_id in isp_taxes:
             res = 'S2'

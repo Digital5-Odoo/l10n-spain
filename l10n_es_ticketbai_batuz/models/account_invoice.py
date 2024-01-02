@@ -372,7 +372,7 @@ class AccountInvoice(models.Model):
         tax_templates = tbai_maps.mapped("tax_template_ids")
         return self.env["l10n.es.aeat.report"].new(
             {'company_id': self.company_id.id}
-        ).get_taxes_from_templates(tax_templates)
+        ).get_taxes_from_templates(tax_templates, invoice_company_id=self.company_id.id)
 
     @api.multi
     def _get_lroe_sign(self):

@@ -6,6 +6,7 @@ from . import account_tax
 from . import aeat_certificate
 from . import chart_template
 from . import ir_sequence
+from . import l10n_es_aeat_report
 from . import res_company
 from . import ticketbai_invoice
 from . import ticketbai_tax_map
