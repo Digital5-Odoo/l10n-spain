@@ -34,7 +34,8 @@
                                 attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"
                             />
                             <field
-                                name="tbai_date_operation"
+                                name="date"
+                                string="Operation Date"
                                 attrs="{'readonly': [('state', '!=', 'draft')]}"
                             />
                             <field
