@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 12.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-02 17:19+0000\n"
-"PO-Revision-Date: 2024-02-02 18:21+0100\n"
+"POT-Creation-Date: 2024-03-12 16:40+0000\n"
+"PO-Revision-Date: 2024-03-12 17:40+0100\n"
 "Last-Translator: olatzavanzosc <olatzaranguren@avanzosc.es>\n"
 "Language-Team: \n"
 "Language: es\n"
@@ -83,8 +83,8 @@ msgid "Cancel and recreate"
 msgstr "Cancelar y recrear"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:307
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:363
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:367
 #, python-format
 msgid "Cancellation"
 msgstr "Anulación factura"
@@ -295,6 +295,21 @@ msgid "Invoice Tax"
 msgstr "Impuesto de factura"
 
 #. module: l10n_es_ticketbai
+#: selection:account.journal,tbai_invoice_issuer:0
+msgid "Invoice issued by a third party"
+msgstr "Factura emitida por tercero"
+
+#. module: l10n_es_ticketbai
+#: selection:account.journal,tbai_invoice_issuer:0
+msgid "Invoice issued by recipient"
+msgstr "Factura emitida por destinatario"
+
+#. module: l10n_es_ticketbai
+#: selection:account.journal,tbai_invoice_issuer:0
+msgid "Invoice issued by the issuer itself"
+msgstr "Factura emitida por el propio emisor"
+
+#. module: l10n_es_ticketbai
 #: code:addons/l10n_es_ticketbai/models/ticketbai_invoice.py:120
 #, python-format
 msgid ""
@@ -323,6 +338,11 @@ msgstr "Dejarlo vacío para utilizar la fecha actual"
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.invoice_form_inherit
 msgid "Key/Type"
 msgstr "Clave/Tipo"
+
+#. module: l10n_es_ticketbai
+#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.invoice_form_inherit
+msgid "La fecha de factura se auto-asignará en el momento de confirmación."
+msgstr ""
 
 #. module: l10n_es_ticketbai
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_fp_tbai_tax____last_update
@@ -432,8 +452,8 @@ msgid "Origin Invoices Data"
 msgstr "Datos facturas origen"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:352
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:408
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:425
 #, python-format
 msgid ""
 "Please, specify data for the original invoices that are going to be refunded"
@@ -456,8 +476,8 @@ msgid "Refund"
 msgstr "Rectificativa"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:330
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:386
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:390
 #, python-format
 msgid ""
 "Refund invoices must be cancelled in order to cancel the original invoice."
@@ -525,8 +545,8 @@ msgid "Software"
 msgstr "Software"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:366
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:422
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:439
 #, python-format
 msgid "Some of the original invoices have related tbai cancelled invoices"
 msgstr ""
@@ -534,8 +554,8 @@ msgstr ""
 "relacionadas"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:361
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:417
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:434
 #, python-format
 msgid ""
 "Some of the original invoices have related tbai invoices in inconsistent "
@@ -632,6 +652,7 @@ msgstr ""
 
 #. module: l10n_es_ticketbai
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:127
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:130
 #, python-format
 msgid ""
 "The invoice date violates Art.11 del Reglamento de facturación.\n"
@@ -653,6 +674,7 @@ msgstr ""
 
 #. module: l10n_es_ticketbai
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:119
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:122
 #, python-format
 msgid "The operation date cannot be greater than the invoice date."
 msgstr ""
@@ -839,6 +861,13 @@ msgstr ""
 "'Error'."
 
 #. module: l10n_es_ticketbai
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_bank_statement_import_journal_creation__tbai_invoice_issuer
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_invoice__tbai_invoice_issuer
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_journal__tbai_invoice_issuer
+msgid "TicketBai: Invoice issuer"
+msgstr "TicketBai: emisor de la factura"
+
+#. module: l10n_es_ticketbai
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_fp_tbai_tax__tbai_vat_exemption_key
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_fp_tbai_tax_template__tbai_vat_exemption_key
 msgid "VAT Exemption Key"
@@ -885,14 +914,15 @@ msgid "Wizard to Load AEAT Certificate"
 msgstr "Asistente para cargar el certificado AEAT"
 
 #. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_invoice.py:85
 #: code:addons/l10n_es_ticketbai/models/account_invoice.py:89
+#: code:addons/l10n_es_ticketbai/models/account_invoice.py:92
 #, python-format
 msgid "You cannot change to draft a TicketBAI invoice!"
 msgstr "No es posible cambiar el estado a borrador de una factura TicketBAI!"
 
 #. module: l10n_es_ticketbai
 #: code:addons/l10n_es_ticketbai/models/account_journal.py:39
+#: code:addons/l10n_es_ticketbai/models/account_journal.py:54
 #, python-format
 msgid ""
 "You cannot stop sending invoices from this journal, an invoice has already "

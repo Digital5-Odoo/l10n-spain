@@ -78,6 +78,9 @@ class AccountInvoice(models.Model):
         comodel_name='tbai.invoice.refund.origin',
         inverse_name='account_refund_invoice_id',
         string='TicketBAI Refund Origin References')
+    tbai_invoice_issuer = fields.Selection(
+        related='journal_id.tbai_invoice_issuer', store=True
+    )
 
     @api.multi
     @api.constrains('state')
@@ -273,7 +276,8 @@ class AccountInvoice(models.Model):
             'amount_total': "%.2f" % self.amount_total_company_signed,
             'vat_regime_key': self.tbai_vat_regime_key.code,
             'vat_regime_key2': self.tbai_vat_regime_key2.code,
-            'vat_regime_key3': self.tbai_vat_regime_key3.code
+            'vat_regime_key3': self.tbai_vat_regime_key3.code,
+            'tbai_invoice_issuer': self.tbai_invoice_issuer,
         }
         if partner and not partner.aeat_anonymous_cash_customer:
             vals['tbai_customer_ids'] = [(0, 0, {
@@ -403,6 +407,7 @@ class AccountInvoice(models.Model):
             lambda x: x.tbai_enabled
             and x.type in ("out_invoice", "out_refund")
             and x.tbai_send_invoice
+            and x.tbai_invoice_issuer == "N"
         )
         out_invoices.write({"date_invoice": fields.Date.today()})
         for move in out_invoices:
