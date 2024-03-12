@@ -6,14 +6,24 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-21 15:30+0000\n"
-"PO-Revision-Date: 2024-02-21 15:30+0000\n"
+"POT-Creation-Date: 2024-03-12 15:42+0000\n"
+"PO-Revision-Date: 2024-03-12 15:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_es_ticketbai
+#: code:addons/l10n_es_ticketbai/models/account_move.py:0
+#, python-format
+msgid ""
+"\n"
+"The invoice date violates Art.11 del Reglamento de facturación.\n"
+"\n"
+"The limit invoice date taking into account the operation date (%s) is %s"
+msgstr ""
 
 #. module: l10n_es_ticketbai
 #: model:ir.model,name:l10n_es_ticketbai.model_l10n_es_aeat_certificate
@@ -295,6 +305,21 @@ msgid "Invoice Serial"
 msgstr ""
 
 #. module: l10n_es_ticketbai
+#: model:ir.model.fields.selection,name:l10n_es_ticketbai.selection__account_journal__tbai_invoice_issuer__t
+msgid "Invoice issued by a third party"
+msgstr ""
+
+#. module: l10n_es_ticketbai
+#: model:ir.model.fields.selection,name:l10n_es_ticketbai.selection__account_journal__tbai_invoice_issuer__d
+msgid "Invoice issued by recipient"
+msgstr ""
+
+#. module: l10n_es_ticketbai
+#: model:ir.model.fields.selection,name:l10n_es_ticketbai.selection__account_journal__tbai_invoice_issuer__n
+msgid "Invoice issued by the issuer itself"
+msgstr ""
+
+#. module: l10n_es_ticketbai
 #: model:ir.ui.menu,name:l10n_es_ticketbai.menu_tbai_invoice
 msgid "Invoices"
 msgstr ""
@@ -317,6 +342,11 @@ msgstr ""
 #. module: l10n_es_ticketbai
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.view_move_form_inherit
 msgid "Key/Type"
+msgstr ""
+
+#. module: l10n_es_ticketbai
+#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.view_move_form_inherit
+msgid "La fecha de factura se auto-asignará en el momento de confirmación."
 msgstr ""
 
 #. module: l10n_es_ticketbai
@@ -567,7 +597,7 @@ msgstr ""
 #: model:ir.model.constraint,message:l10n_es_ticketbai.constraint_account_fp_tbai_tax_template_position_tax_uniq
 #, python-format
 msgid "Tax must be unique per fiscal position!"
-msgstr "¡El impuesto debe ser único por posición fiscal!"
+msgstr ""
 
 #. module: l10n_es_ticketbai
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_tbai_tax_map__tax_template_ids
@@ -629,14 +659,6 @@ msgstr ""
 msgid ""
 "The description for invoices. Only used when the field TicketBAI Description"
 " Method is 'Fixed'."
-msgstr ""
-
-#. module: l10n_es_ticketbai
-#: code:addons/l10n_es_ticketbai/models/account_move.py:0
-#, python-format
-msgid ""
-"The invoice date violates Art.11 del Reglamento de facturación.\n"
-"                                The limit invoice date taking into account the operation date (%s) is %s"
 msgstr ""
 
 #. module: l10n_es_ticketbai
@@ -827,6 +849,14 @@ msgstr ""
 msgid ""
 "TicketBAI: You cannot cancel and recreate an Invoice with a state different "
 "than 'Error'."
+msgstr ""
+
+#. module: l10n_es_ticketbai
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_bank_statement_line__tbai_invoice_issuer
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_journal__tbai_invoice_issuer
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_move__tbai_invoice_issuer
+#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_payment__tbai_invoice_issuer
+msgid "TicketBai: Invoice issuer"
 msgstr ""
 
 #. module: l10n_es_ticketbai
