@@ -102,6 +102,9 @@ class AccountMove(models.Model):
         inverse_name="account_refund_invoice_id",
         string="TicketBAI Refund Origin References",
     )
+    tbai_invoice_issuer = fields.Selection(
+        related="journal_id.tbai_invoice_issuer", store=True
+    )
 
     @api.constrains("state")
     def _check_cancel_number_invoice(self):
@@ -326,6 +329,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
             "vat_regime_key": self.tbai_vat_regime_key.code,
             "vat_regime_key2": self.tbai_vat_regime_key2.code,
             "vat_regime_key3": self.tbai_vat_regime_key3.code,
+            "tbai_invoice_issuer": self.tbai_invoice_issuer,
         }
         if partner and not partner.aeat_anonymous_cash_customer:
             vals["tbai_customer_ids"] = [
@@ -508,6 +512,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
             lambda x: x.tbai_enabled
             and x.move_type in ("out_invoice", "out_refund")
             and x.tbai_send_invoice
+            and x.tbai_invoice_issuer == "N"
         )
         out_invoices.write({"invoice_date": fields.Date.today()})
         for move in out_invoices:

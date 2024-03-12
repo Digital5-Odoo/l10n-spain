@@ -14,17 +14,18 @@
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <div
                     colspan="2"
-                    attrs="{'invisible': ['|', ('state', '!=', 'draft'), ('move_type', 'not in', ('out_invoice', 'out_refund'))]}"
+                    attrs="{'invisible': ['|', ('tbai_send_invoice', '=', False), '|', ('state', '!=', 'draft'), ('move_type', 'not in', ('out_invoice', 'out_refund'))]}"
                 >
                     <p
                         class="alert alert-warning"
                     >La fecha de factura se auto-asignará en el momento de confirmación.</p>
                 </div>
+                <field name="tbai_invoice_issuer" attrs="{'invisible': [('tbai_invoice_issuer', '=', 'N')]}" />
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
                 <attribute
                     name="attrs"
-                >{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('tbai_enabled', '=', True), '&amp;', ('tbai_send_invoice', '=', True), ('move_type', 'in', ('out_invoice', 'out_refund', 'out_receipt'))]}</attribute>
+                >{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('tbai_invoice_issuer', '=', 'N'), '&amp;', ('tbai_send_invoice', '=', True), '&amp;', ('move_type', 'in', ('out_invoice', 'out_refund')), ('tbai_enabled', '=', True)]}</attribute>
             </xpath>
             <xpath
                 expr="//group[@id='header_right_group']/field[@name='date']"
