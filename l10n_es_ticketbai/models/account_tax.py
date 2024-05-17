@@ -16,7 +16,15 @@ class AccountTax(models.Model):
         return self not in s_iva_ns_taxes
 
     def tbai_is_tax_exempted(self):
-        return self.tax_group_id.id == self.env.ref('l10n_es.tax_group_iva_0').id
+        map_ids = self.env["tbai.tax.map"].search([("code", "in", ["IEE", "SER"])])
+        tax_ids = self.env["l10n.es.aeat.report"].new(
+            {'company_id': self.company_id.id}
+        ).get_taxes_from_templates(map_ids.mapped("tax_template_ids"))
+        return self in tax_ids
 
     def tbai_is_not_tax_exempted(self):
-        return self.tax_group_id.id != self.env.ref('l10n_es.tax_group_iva_0').id
+        map_ids = self.env["tbai.tax.map"].search([("code", "in", ["IEE", "SER"])])
+        tax_ids = self.env["l10n.es.aeat.report"].new(
+            {'company_id': self.company_id.id}
+        ).get_taxes_from_templates(map_ids.mapped("tax_template_ids"))
+        return self not in tax_ids
