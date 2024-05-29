@@ -110,7 +110,7 @@ class AccountMove(models.Model):
                 record.move_type in ("out_invoice", "out_refund")
                 and record.tbai_enabled
                 and "draft" == record.state
-                and record.tbai_invoice_idF
+                and record.tbai_invoice_id
             ):
                 raise exceptions.ValidationError(
                     _("You cannot change to draft a TicketBAI invoice!")
