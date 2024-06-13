@@ -510,15 +510,13 @@ The limit invoice date taking into account the operation date (%s) is %s"""
             lambda x: x.tbai_enabled
             and x.move_type in ("out_invoice", "out_refund")
             and x.tbai_send_invoice
-            and x.invoice_date
         )
         for move in out_invoices:
-            vals = {"invoice_date": fields.Date.context_today(move)}
+            vals = {
+                "invoice_date": fields.Date.context_today(move),
+                "date": move.date,
+            }
             move.write(vals)
-
-    def action_post(self):
-        self._set_invoice_date_today()
-        return super().action_post()
 
     def _post(self, soft=True):
         def validate_refund_invoices():
@@ -550,6 +548,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
                 if not valid_refund:
                     raise exceptions.ValidationError(error_refund_msg)
 
+        self._set_invoice_date_today()
         res = super()._post(soft)
         tbai_invoices = self.sudo().env["account.move"]
         # Segun pregunta nº 238 de batuz.eus: ¿Cuál es el criterio temporal para anotar
