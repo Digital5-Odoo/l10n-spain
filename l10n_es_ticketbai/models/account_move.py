@@ -139,8 +139,8 @@ class AccountMove(models.Model):
                 record.move_type in ("out_invoice", "out_refund")
                 and record.tbai_enabled
             ):
-                invoice_date = record.invoice_date or fields.Date.context_today(self)
-                operation_date = record.date if record.date else fields.Date.context_today(self)
+                invoice_date = record.invoice_date or fields.Date.context_today(record)
+                operation_date = record.date if record.date else fields.Date.context_today(record)
                 if operation_date == invoice_date:
                     continue
                 elif operation_date > invoice_date:
@@ -509,8 +509,8 @@ The limit invoice date taking into account the operation date (%s) is %s"""
             and x.move_type in ("out_invoice", "out_refund")
             and x.tbai_send_invoice
         )
-        out_invoices.write({"invoice_date": fields.Date.context_today(self)})
         for move in out_invoices:
+            move.write({"invoice_date": fields.Date.context_today(move)})
             move._onchange_invoice_date()
 
     def _post(self, soft=True):
