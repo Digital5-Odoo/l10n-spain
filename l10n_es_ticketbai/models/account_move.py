@@ -116,7 +116,7 @@ class AccountMove(models.Model):
                     _("You cannot change to draft a TicketBAI invoice!")
                 )
 
-    @api.constrains("date", "date_invoice")
+    @api.constrains("date", "invoice_date")
     def _check_dates(self):
         """
         Segun DECRETO FORAL de la Diputación Foral de Bizkaia 4/2013, de 22 de enero,
