@@ -54,7 +54,6 @@ class AccountMove(models.Model):
     tbai_datetime_invoice = fields.Datetime(
         compute="_compute_tbai_datetime_invoice", store=True, copy=False
     )
-    tbai_date_operation = fields.Datetime("Operation Date", copy=False)
     tbai_description_operation = fields.Text(
         "Operation Description",
         default="/",
@@ -101,6 +100,17 @@ class AccountMove(models.Model):
         inverse_name="account_refund_invoice_id",
         string="TicketBAI Refund Origin References",
     )
+
+    @api.constrains('date', 'invoice_date')
+    def _check_dates(self):
+        for record in self:
+            if record.move_type in ('out_invoice', 'out_refund') and \
+                record.tbai_enabled and \
+                (record.date and record.invoice_date and
+                 record.date > record.invoice_date):
+                raise exceptions.ValidationError(
+                    _('The operation date cannot be greater than the invoice date.')
+                )
 
     @api.constrains("state")
     def _check_cancel_number_invoice(self):
@@ -527,7 +537,7 @@ class AccountMove(models.Model):
         return num_invoice
 
     def tbai_get_value_fecha_exp_factura(self):
-        invoice_date = self.date or self.invoice_date
+        invoice_date = self.invoice_date
         date = fields.Datetime.context_timestamp(
             self, fields.Datetime.from_string(invoice_date)
         )
@@ -562,13 +572,9 @@ class AccountMove(models.Model):
         return "%.2f" % amount
 
     def tbai_get_value_fecha_operacion(self):
-        if self.tbai_date_operation:
-            tbai_date_operation = self.tbai_date_operation.strftime("%d-%m-%Y")
-            date_invoice = (self.date or self.invoice_date).strftime("%d-%m-%Y")
-            if tbai_date_operation == date_invoice:
-                tbai_date_operation = None
-        else:
-            tbai_date_operation = None
+        tbai_date_operation = None
+        if self.date != self.invoice_date:
+            tbai_date_operation = self.date.strftime("%d-%m-%Y")
         return tbai_date_operation
 
     def tbai_get_value_retencion_soportada(self):
