@@ -241,7 +241,7 @@ class AccountInvoice(models.Model):
             res["IDOtro"] = OrderedDict([
                 ("CodigoPais", country_code),
                 ("IDType", idtype),
-                ("ID", vat),
+                ("ID", partner.tbai_partner_identification_number or vat),
             ])
         res["ApellidosNombreRazonSocial"] = \
             partner.tbai_get_value_apellidos_nombre_razon_social()
