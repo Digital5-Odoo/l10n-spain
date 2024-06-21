@@ -219,7 +219,7 @@ class AccountInvoice(models.Model):
                     })
 
         self.ensure_one()
-        partner = self.partner_id
+        partner = self.commercial_partner_id
         vals = {
             'invoice_id': self.id,
             'schema': TicketBaiSchema.TicketBai.value,
