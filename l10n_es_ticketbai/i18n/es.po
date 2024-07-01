@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 15.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-03-10 11:59+0000\n"
-"PO-Revision-Date: 2023-09-03 07:57+0000\n"
+"POT-Creation-Date: 2024-06-13 11:40+0000\n"
+"PO-Revision-Date: 2024-06-13 13:44+0200\n"
 "Last-Translator: Ivorra78 <informatica@totmaterial.es>\n"
 "Language-Team: \n"
 "Language: es\n"
@@ -15,7 +15,23 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.17\n"
+"X-Generator: Poedit 3.4.4\n"
+
+#. module: l10n_es_ticketbai
+#. odoo-python
+#: code:addons/l10n_es_ticketbai/models/account_move.py:0
+#, python-format
+msgid ""
+"\n"
+"The invoice date violates Art.11 del Reglamento de facturación.\n"
+"\n"
+"The limit invoice date taking into account the operation date (%s) is %s"
+msgstr ""
+"\n"
+"La fecha de emisión viola el Art.11 del Reglamento de facturación.\n"
+"\n"
+"La fecha límite de emisión teniendo en cuenta la fecha de operación (%s) es "
+"%s"
 
 #. module: l10n_es_ticketbai
 #: model:ir.model,name:l10n_es_ticketbai.model_l10n_es_aeat_certificate
@@ -290,6 +306,11 @@ msgid "Key/Type"
 msgstr "Clave/Tipo"
 
 #. module: l10n_es_ticketbai
+#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.view_move_form_inherit
+msgid "La fecha de factura se auto-asignará en el momento de confirmación."
+msgstr ""
+
+#. module: l10n_es_ticketbai
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_fp_tbai_tax____last_update
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_fp_tbai_tax_template____last_update
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_tbai_info____last_update
@@ -384,9 +405,7 @@ msgstr ""
 "entonces el prefijo es FV/2021/, incluyendo el caracter separador final"
 
 #. module: l10n_es_ticketbai
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_bank_statement_line__tbai_date_operation
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_move__tbai_date_operation
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_payment__tbai_date_operation
+#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai.view_move_form_inherit
 msgid "Operation Date"
 msgstr "Fecha operación"
 
@@ -610,6 +629,13 @@ msgid ""
 msgstr ""
 "El número de la factura p.e. si la actura es FV/2021/00001 entonces el "
 "número es 00001"
+
+#. module: l10n_es_ticketbai
+#. odoo-python
+#: code:addons/l10n_es_ticketbai/models/account_move.py:0
+#, python-format
+msgid "The operation date cannot be greater than the invoice date."
+msgstr "La fecha de operación no puede ser posterior a la fecha de emisión."
 
 #. module: l10n_es_ticketbai
 #: model:ir.ui.menu,name:l10n_es_ticketbai.menu_finance_ticketbai
@@ -869,23 +895,22 @@ msgstr ""
 "No puedes dejar de enviar facturas de este diario, al menos una factura ya "
 "ha sido enviada."
 
-#~ msgid "Expected string date format: %dd-%mm-%yyyy"
-#~ msgstr "Formato de fecha esperado: %dd-%mm-%yyyy"
-
-#, python-format
-#~ msgid ""
-#~ "Invoice: number %(name)s prefix %(prefix)s invoice_date %(date)s exists. "
-#~ "Create a credit note from this invoice."
-#~ msgstr ""
-#~ "La factura con número %(name)s , prefijo %(prefix)s y fecha %(date)s "
-#~ "existe. Crea una rectificativa partiendo de esa factura."
-
-#, python-format
-#~ msgid "Refunded Invoice %s Expedition Date"
-#~ msgstr "Factura rectificativa %s fecha"
-
 #~ msgid "Invoices"
 #~ msgstr "Facturas"
 
+#, python-format
+#~ msgid ""
+#~ "Refunded Invoice %s Number Prefix %s longer than expected. Should be 20 "
+#~ "characters max.!"
+#~ msgstr ""
+#~ "Factura rectificativa número %s prefijo %s más largo de lo esperado. "
+#~ "Debería de contener 20 caracteres como máximo!"
+
 #~ msgid "Sequence"
 #~ msgstr "Secuencia"
+
+#~ msgid "Start date for sending invoices to the tax authorities"
+#~ msgstr "Fecha de inicio para envío de facturas a las autoridades fiscales"
+
+#~ msgid "TicketBAI active date"
+#~ msgstr "TicketBAI fecha activación"
