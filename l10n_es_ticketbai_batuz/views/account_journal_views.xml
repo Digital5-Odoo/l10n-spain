@@ -11,6 +11,11 @@
                     name="attrs"
                 >{'invisible': ['|', ('type', 'not in', ['sale', 'purchase']), ('tbai_enabled', '=', False)]}</attribute>
             </xpath>
+            <xpath expr="//field[@name='tbai_active_date']" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'invisible': ['|', '|', ('tbai_send_invoice', '=', False), ('type', 'not in', ['sale', 'purchase']), ('tbai_enabled', '=', False)]}</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
