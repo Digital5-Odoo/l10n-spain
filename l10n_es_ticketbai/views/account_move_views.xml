@@ -11,6 +11,32 @@
             <xpath expr="//field[@name='reversed_entry_id']" position="attributes">
                 <attribute name="force_save">1</attribute>
             </xpath>
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <div
+                    colspan="2"
+                    attrs="{'invisible': ['|', '|', '|', ('tbai_enabled', '=', False), ('tbai_send_invoice', '=', False), ('state', '!=', 'draft'), ('move_type', 'not in', ('out_invoice', 'out_refund'))]}"
+                >
+                    <p
+                        class="alert alert-warning"
+                    >La fecha de factura se auto-asignará en el momento de confirmación.</p>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='invoice_date']" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))],
+                    'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('tbai_enabled', '=', True), '&amp;', ('tbai_send_invoice', '=', True), ('move_type', 'in', ('out_invoice', 'out_refund', 'out_receipt'))]
+                }</attribute>
+            </xpath>
+            <xpath
+                expr="//group[@id='header_right_group']/field[@name='date']"
+                position="attributes"
+            >
+                <attribute
+                    name="attrs"
+                >{'readonly': [('state', '!=', 'draft')]}</attribute>
+                <attribute name="string">Operation Date</attribute>
+            </xpath>
             <page name="other_info" position="after">
                 <page
                     name="ticketbai"
@@ -27,20 +53,16 @@
                             attrs="{'invisible': [('tbai_invoice_id', '=', False)]}"
                         />
                             <field
-                            name="tbai_cancellation_id"
-                            readonly="1"
-                            options="{'no_create':True}"
-                            attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"
-                        />
+                                name="tbai_cancellation_id"
+                                readonly="1"
+                                options="{'no_create':True}"
+                                attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"
+                            />
                             <field
-                            name="tbai_date_operation"
-                            attrs="{'readonly': [('state', '!=', 'draft')]}"
-                        />
-                            <field
-                            name="tbai_description_operation"
-                            widget="char"
-                            attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"
-                        />
+                                name="tbai_description_operation"
+                                widget="char"
+                                attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"
+                            />
                         </group>
                       <group
                         name="tbai_refund"
