@@ -15,7 +15,7 @@ class AccountJournal(models.Model):
     tbai_active_date = fields.Date(
         string="TicketBAI active date",
         help="Start date for sending invoices to the tax authorities",
-        default=fields.Date.to_date("2022-01-01"),
+        default=fields.Date.to_date("2024-07-01"),
     )
 
     @api.onchange("refund_sequence")
