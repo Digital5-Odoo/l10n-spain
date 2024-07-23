@@ -307,7 +307,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
                     )
 
         self.ensure_one()
-        partner = self.partner_id
+        partner = self.commercial_partner_id
         vals = {
             "invoice_id": self.id,
             "schema": TicketBaiSchema.TicketBai.value,
