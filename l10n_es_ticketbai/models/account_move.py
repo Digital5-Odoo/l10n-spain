@@ -300,7 +300,7 @@ facturación.\nThe limit invoice date taking into account the operation date \
                     )
 
         self.ensure_one()
-        partner = self.partner_id
+        partner = self.commercial_partner_id
         vals = {
             "invoice_id": self.id,
             "schema": "TicketBai",
