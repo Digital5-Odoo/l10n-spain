@@ -11,8 +11,6 @@ import xmltodict
 from cryptography.hazmat.primitives import hashes
 from lxml import etree
 
-from ..utils import utils as tbai_utils
-
 _logger = logging.getLogger(__name__)
 
 
@@ -33,12 +31,6 @@ class XMLSchemaModeNotSupported(XMLSchemaException):
         super(XMLSchemaModeNotSupported, self).__init__(msg)
 
 
-class TicketBaiSchema(tbai_utils.EnumValues):
-    TicketBai = "TicketBai"
-    AnulaTicketBai = "AnulaTicketBai"
-    TicketBaiResponse = "TicketBaiResponse"
-
-
 class XMLSchema:
     version = "1.2"
     schemas_version_dirname = "v1.2"
@@ -48,11 +40,11 @@ class XMLSchema:
     choice_tag = "{%s}choice" % ns
 
     def __init__(self, mode):
-        if mode == TicketBaiSchema.TicketBai.value:
+        if mode == "TicketBai":
             invoice_ns = "urn:ticketbai:emision"
-        elif mode == TicketBaiSchema.AnulaTicketBai.value:
+        elif mode == "AnulaTicketBai":
             invoice_ns = "urn:ticketbai:anulacion"
-        elif mode == TicketBaiSchema.TicketBaiResponse.value:
+        elif mode == "TicketBaiResponse":
             invoice_ns = "urn:ticketbai:emision"
         else:
             raise XMLSchemaModeNotSupported(
