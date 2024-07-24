@@ -14,11 +14,6 @@ from odoo.addons.l10n_es_ticketbai_api.tests.common import TestL10nEsTicketBAIAP
 
 from ..lroe import lroe_api
 from ..lroe.lroe_xml_schema import LROEXMLSchema, LROEXMLSchemaModeNotSupported
-from ..models.lroe_operation import LROEModelEnum, LROEOperationEnum
-from ..models.lroe_operation_response import (
-    LROEOperationResponseLineState,
-    LROEOperationResponseState,
-)
 
 TEST_01_XSD_SCHEMA = "LROE_PJ_240_1_1_FacturasEmitidas_ConSG_AltaPeticion_V1_0_2.xsd"
 TEST_02_XSD_SCHEMA = "LROE_PF_140_1_1_Ingresos_ConfacturaConSG_AltaPeticion_V1_0_2.xsd"
@@ -96,7 +91,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         pf_140 = "company-bizkaia-pf-140.json"
         p12_pj_240 = "tbai-p12-bizkaia-pj-240.json"
         p12_pf_140 = "tbai-p12-bizkaia-pf-140.json"
-        lroe_240 = LROEModelEnum.model_pj_240.value
+        lroe_240 = "240"
         lroe_model = company.lroe_model
         company_json = pj_240 if lroe_model == lroe_240 else pf_140
         tbai_p12_json = p12_pj_240 if lroe_model == lroe_240 else p12_pf_140
@@ -207,10 +202,10 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         tbai_invoice1_ids = self.create_tbai_invoice("00001")
         tbai_invoice2_ids = self.create_tbai_invoice("00002")
         tbai_invoice_ids = tbai_invoice1_ids.ids + tbai_invoice2_ids.ids
-        self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+        self.main_company.lroe_model = "240"
         lroe_op_alta_pj_240_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, tbai_invoice_ids)],
             "lroe_chapter_id": self.lroe_240_chapter_1.id,
             "lroe_subchapter_id": self.lroe_240_subchapter_1.id,
@@ -241,11 +236,11 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         tbai_invoice1_ids = self.create_tbai_invoice("00001")
         tbai_invoice2_ids = self.create_tbai_invoice("00002")
         tbai_invoice_ids = tbai_invoice1_ids.ids + tbai_invoice2_ids.ids
-        self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+        self.main_company.lroe_model = "140"
         self.main_company.main_activity_iae = "276300"
         lroe_op_alta_pf_140_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, tbai_invoice_ids)],
             "lroe_chapter_id": self.lroe_140_chapter_1.id,
             "lroe_subchapter_id": self.lroe_140_subchapter_1.id,
@@ -263,10 +258,10 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         tbai_cancel_invoice_ids = (
             tbai_invoice1_cancel_ids.ids + tbai_invoice2_cancel_ids.ids
         )
-        self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+        self.main_company.lroe_model = "240"
         lroe_op_cancel_pj_240_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.cancel.value,
+            "type": "AN0",
             "tbai_invoice_ids": [(6, 0, tbai_cancel_invoice_ids)],
             "lroe_chapter_id": self.lroe_240_chapter_1.id,
             "lroe_subchapter_id": self.lroe_240_subchapter_1.id,
@@ -284,11 +279,11 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         tbai_cancel_invoice_ids = (
             tbai_invoice1_cancel_ids.ids + tbai_invoice2_cancel_ids.ids
         )
-        self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+        self.main_company.lroe_model = "140"
         self.main_company.main_activity_iae = "276300"
         lroe_op_cancel_pf_140_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.cancel.value,
+            "type": "AN0",
             "tbai_invoice_ids": [(6, 0, tbai_cancel_invoice_ids)],
             "lroe_chapter_id": self.lroe_140_chapter_1.id,
             "lroe_subchapter_id": self.lroe_140_subchapter_1.id,
@@ -302,10 +297,10 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_05_prepare_lroe_response_values_alta_model_pj_240(self):
         tbai_invoice_obj = self.create_tbai_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+        self.main_company.lroe_model = "240"
         lroe_op_alta_pj_240_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_240_chapter_1.id,
             "lroe_subchapter_id": self.lroe_240_subchapter_1.id,
@@ -328,24 +323,22 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         self.assertEqual(
             lroe_response_values.get("lroe_operation_id"), lroe_op_alta_model_pj_240.id
         )
-        self.assertEqual(
-            lroe_response_values.get("state"), LROEOperationResponseState.CORRECT.value
-        )
+        self.assertEqual(lroe_response_values.get("state"), "Correcto")
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
         for response_line_id in lroe_response_values.get("response_line_ids"):
             self.assertTrue(
                 response_line_id[2].get("state"),
-                LROEOperationResponseLineState.CORRECT.value,
+                "Correcto",
             )
 
     def test_06_prepare_lroe_response_values_alta_model_pf_140(self):
         tbai_invoice_obj = self.create_tbai_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+        self.main_company.lroe_model = "140"
         self.main_company.main_activity_iae = "276300"
         lroe_op_alta_pf_140_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_140_chapter_1.id,
             "lroe_subchapter_id": self.lroe_140_subchapter_1.id,
@@ -368,23 +361,21 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         self.assertEqual(
             lroe_response_values.get("lroe_operation_id"), lroe_op_alta_model_pf_140.id
         )
-        self.assertEqual(
-            lroe_response_values.get("state"), LROEOperationResponseState.CORRECT.value
-        )
+        self.assertEqual(lroe_response_values.get("state"), "Correcto")
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
         for response_line_id in lroe_response_values.get("response_line_ids"):
             self.assertTrue(
                 response_line_id[2].get("state"),
-                LROEOperationResponseLineState.CORRECT.value,
+                "Correcto",
             )
 
     def test_07_prepare_lroe_response_values_alta_model_pj_240_w_errors(self):
         tbai_invoice_obj = self.create_tbai_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+        self.main_company.lroe_model = "240"
         lroe_op_alta_pj_240_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_240_chapter_1.id,
             "lroe_subchapter_id": self.lroe_240_subchapter_1.id,
@@ -409,7 +400,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         )
         self.assertEqual(
             lroe_response_values.get("state"),
-            LROEOperationResponseState.PARTIALLY_CORRECT.value,
+            "ParcialmenteCorrecto",
         )
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
@@ -417,15 +408,9 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         response_incorrect = 0
         for response_line_id in lroe_response_values.get("response_line_ids"):
             response_line_dict = response_line_id[2]
-            if (
-                response_line_dict.get("state")
-                == LROEOperationResponseLineState.CORRECT.value
-            ):
+            if response_line_dict.get("state") == "Correcto":
                 response_correct += 1
-            if (
-                response_line_dict.get("state")
-                == LROEOperationResponseLineState.INCORRECT.value
-            ):
+            if response_line_dict.get("state") == "Incorrecto":
                 response_incorrect += 1
                 self.assertTrue(len(response_line_dict.get("code")) > 0)
                 self.assertTrue(len(response_line_dict.get("description")) > 0)
@@ -434,11 +419,11 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_08_prepare_lroe_response_values_alta_model_pf_140_w_errors(self):
         tbai_invoice_obj = self.create_tbai_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+        self.main_company.lroe_model = "140"
         self.main_company.main_activity_iae = "276300"
         lroe_op_alta_pf_140_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_140_chapter_1.id,
             "lroe_subchapter_id": self.lroe_140_subchapter_1.id,
@@ -463,7 +448,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         )
         self.assertEqual(
             lroe_response_values.get("state"),
-            LROEOperationResponseState.PARTIALLY_CORRECT.value,
+            "ParcialmenteCorrecto",
         )
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
@@ -471,15 +456,9 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         response_incorrect = 0
         for response_line_id in lroe_response_values.get("response_line_ids"):
             response_line_dict = response_line_id[2]
-            if (
-                response_line_dict.get("state")
-                == LROEOperationResponseLineState.CORRECT.value
-            ):
+            if response_line_dict.get("state") == "Correcto":
                 response_correct += 1
-            if (
-                response_line_dict.get("state")
-                == LROEOperationResponseLineState.INCORRECT.value
-            ):
+            if response_line_dict.get("state") == "Incorrecto":
                 response_incorrect += 1
                 self.assertTrue(len(response_line_dict.get("code")) > 0)
                 self.assertTrue(len(response_line_dict.get("description")) > 0)
@@ -488,10 +467,10 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_09_prepare_lroe_response_values_alta_model_pj_240_incorrect(self):
         tbai_invoice_obj = self.create_tbai_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+        self.main_company.lroe_model = "240"
         lroe_op_alta_pj_240_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.create.value,
+            "type": "A00",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_240_chapter_1.id,
             "lroe_subchapter_id": self.lroe_240_subchapter_1.id,
@@ -514,23 +493,23 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         )
         self.assertEqual(
             lroe_response_values.get("state"),
-            LROEOperationResponseState.INCORRECT.value,
+            "Incorrecto",
         )
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
         for response_line_id in lroe_response_values.get("response_line_ids"):
             self.assertEqual(
                 response_line_id[2].get("state"),
-                LROEOperationResponseLineState.INCORRECT.value,
+                "Incorrecto",
             )
 
     def test_10_prepare_lroe_response_values_cancel_model_pf_140(self):
         tbai_invoice_obj = self.create_tbai_cancel_invoice("00001")
-        self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+        self.main_company.lroe_model = "140"
         self.main_company.main_activity_iae = "276300"
         lroe_op_cancel_pf_140_dict = {
             "company_id": self.main_company.id,
-            "type": LROEOperationEnum.cancel.value,
+            "type": "AN0",
             "tbai_invoice_ids": [(6, 0, [tbai_invoice_obj.id])],
             "lroe_chapter_id": self.lroe_140_chapter_1.id,
             "lroe_subchapter_id": self.lroe_140_subchapter_1.id,
@@ -558,32 +537,30 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
             lroe_response_values.get("lroe_operation_id"),
             lroe_op_cancel_model_pf_140.id,
         )
-        self.assertEqual(
-            lroe_response_values.get("state"), LROEOperationResponseState.CORRECT.value
-        )
+        self.assertEqual(lroe_response_values.get("state"), "Correcto")
         self.assertTrue(len(lroe_response_values.get("xml")) > 0)
         self.assertTrue(len(lroe_response_values.get("response_line_ids")) > 0)
         for response_line_id in lroe_response_values.get("response_line_ids"):
             self.assertTrue(
                 response_line_id[2].get("state"),
-                LROEOperationResponseLineState.CORRECT.value,
+                "Correcto",
             )
 
     def test_get_tbai_state(self):
         LroeOperationResponse = self.env["lroe.operation.response"]
         states = [
             (
-                LROEOperationResponseState.BUILD_ERROR.value,
-                LROEOperationResponseState.BUILD_ERROR.value,
+                "ErrorConstruccion",
+                "ErrorConstruccion",
             ),
             (
-                LROEOperationResponseState.REQUEST_ERROR.value,
-                LROEOperationResponseState.REQUEST_ERROR.value,
+                "ErrorSolicitud",
+                "ErrorSolicitud",
             ),
-            (LROEOperationResponseState.CORRECT.value, "00"),
-            (LROEOperationResponseState.INCORRECT.value, "01"),
-            (LROEOperationResponseState.PARTIALLY_CORRECT.value, "00"),
-            (LROEOperationResponseLineState.CORRECT_WITH_ERRORS.value, "00"),
+            ("Correcto", "00"),
+            ("Incorrecto", "01"),
+            ("ParcialmenteCorrecto", "00"),
+            ("AceptadoConErrores", "00"),
         ]
         for in_state, out_state in states:
             s = LroeOperationResponse.get_tbai_state(in_state)
@@ -591,7 +568,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_alta_pj_240_send_to_tax_agency(self):
         if self.send_to_tax_agency:
-            self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+            self.main_company.lroe_model = "240"
             self._prepare_bizkaia_company(self.main_company)
             invoice_number_str = self.get_next_number()
             tbai_invoice_id = self.create_tbai_invoice(invoice_number_str)
@@ -599,7 +576,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_alta_model_pf_140_send_to_tax_agency(self):
         if self.send_to_tax_agency:
-            self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+            self.main_company.lroe_model = "140"
             self._prepare_bizkaia_company(self.main_company)
             invoice_number_str = self.get_next_number()
             tbai_invoice_id = self.create_tbai_invoice(invoice_number_str)
@@ -607,7 +584,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_cancel_model_pj_240_send_to_tax_agency(self):
         if self.send_to_tax_agency:
-            self.main_company.lroe_model = LROEModelEnum.model_pj_240.value
+            self.main_company.lroe_model = "240"
             self._prepare_bizkaia_company(self.main_company)
             invoice_number_str = self.get_next_number()
             tbai_invoice_id = self.create_tbai_invoice(invoice_number_str)
@@ -617,7 +594,7 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
 
     def test_cancel_model_pf_140_send_to_tax_agency(self):
         if self.send_to_tax_agency:
-            self.main_company.lroe_model = LROEModelEnum.model_pf_140.value
+            self.main_company.lroe_model = "140"
             self._prepare_bizkaia_company(self.main_company)
             invoice_number_str = self.get_next_number()
             tbai_invoice_id = self.create_tbai_invoice(invoice_number_str)
