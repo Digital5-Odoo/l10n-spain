@@ -11,6 +11,28 @@
             <xpath expr="//field[@name='reversed_entry_id']" position="attributes">
                 <attribute name="force_save">1</attribute>
             </xpath>
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <!-- Sacamos mensaje en facturas emitidas si se establece
+                  fecha factura -->
+                <div
+                    colspan="2"
+                    attrs="{'invisible': ['|', '|', '|', '|', ('invoice_date', '=', False), ('tbai_enabled', '=', False), ('tbai_send_invoice', '=', False), ('state', '!=', 'draft'), ('move_type', 'not in', ('out_invoice', 'out_refund'))]}"
+                >
+                    <p
+                        class="alert alert-warning"
+                        role="alert"
+                    >The invoice date will be auto-assigned at confirmation.</p>
+                </div>
+            </xpath>
+            <xpath
+                expr="//group[@id='header_right_group']/field[@name='date']"
+                position="attributes"
+            >
+                <attribute
+                    name="attrs"
+                >{'readonly': [('state', '!=', 'draft')]}</attribute>
+                <attribute name="string">Operation Date</attribute>
+            </xpath>
             <page name="other_info" position="after">
                 <page
                     name="ticketbai"
@@ -31,10 +53,6 @@
                             readonly="1"
                             options="{'no_create':True}"
                             attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"
-                        />
-                            <field
-                            name="tbai_date_operation"
-                            attrs="{'readonly': [('state', '!=', 'draft')]}"
                         />
                             <field
                             name="tbai_description_operation"
