@@ -557,12 +557,14 @@ facturación.\nThe limit invoice date taking into account the operation date \
             lambda x: x.tbai_enabled
             and "out_invoice" == x.move_type
             and x.tbai_send_invoice
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
         refund_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
             and "out_refund" == x.move_type
             and (not x.tbai_refund_type or x.tbai_refund_type == "I")
             and x.tbai_send_invoice
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
 
         validate_refund_invoices()
