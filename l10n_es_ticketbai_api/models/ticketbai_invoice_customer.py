@@ -7,14 +7,6 @@ from ..utils import utils as tbai_utils
 from .res_country import CountryCode
 
 
-class TicketBaiCustomerIdType(tbai_utils.EnumValues):
-    T02 = "02"
-    T03 = "03"
-    T04 = "04"
-    T05 = "05"
-    T06 = "06"
-
-
 class TicketBaiInvoiceCustomer(models.Model):
     _name = "tbai.invoice.customer"
     _description = "TicketBAI Invoice recipients"
@@ -30,18 +22,18 @@ class TicketBaiInvoiceCustomer(models.Model):
     )
     idtype = fields.Selection(
         selection=[
-            (TicketBaiCustomerIdType.T02.value, "VAT identification number"),
-            (TicketBaiCustomerIdType.T03.value, "Passport"),
+            ("02", "VAT identification number"),
+            ("03", "Passport"),
             (
-                TicketBaiCustomerIdType.T04.value,
-                "Official identification document issued by the "
-                "country or territory of residence",
+                "04",
+                "Official identification document issued by "
+                "the country or territory of residence",
             ),
-            (TicketBaiCustomerIdType.T05.value, "Residence certificate"),
-            (TicketBaiCustomerIdType.T06.value, "Other document"),
+            ("05", "Residence certificate"),
+            ("06", "Other document"),
         ],
         string="Identification Type Code",
-        default=TicketBaiCustomerIdType.T02.value,
+        default="02",
         help="Required for non spanish customers.",
     )
     address = fields.Char(default="")

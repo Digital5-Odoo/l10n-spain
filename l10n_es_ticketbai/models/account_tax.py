@@ -4,12 +4,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import _, exceptions, models
 
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import RefundType
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice_tax import (
-    NotSubjectToCause,
-    TicketBaiTaxType,
-)
-
 
 class AccountTax(models.Model):
     _inherit = "account.tax"
@@ -91,9 +85,9 @@ class AccountTax(models.Model):
 
     def tbai_get_value_tax_type(self):
         if self.tbai_es_prestacion_servicios():
-            res = TicketBaiTaxType.service.value
+            res = "service"
         elif self.tbai_es_entrega():
-            res = TicketBaiTaxType.provision_of_goods.value
+            res = "goods"
         else:
             res = None
         return res
@@ -134,11 +128,11 @@ class AccountTax(models.Model):
                 fp_not_subject_tai
                 and fp_not_subject_tai == invoice_id.fiscal_position_id
             ):
-                res = NotSubjectToCause.RL.value
+                res = "RL"
             else:
-                res = NotSubjectToCause.OT.value
+                res = "OT"
         elif country_code:
-            res = NotSubjectToCause.RL.value
+            res = "RL"
         else:
             raise exceptions.ValidationError(
                 _("Country code for partner %s not found!") % invoice_id.partner_id.name
@@ -146,7 +140,7 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_base_imponible(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
@@ -175,7 +169,7 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_cuota_impuesto(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
@@ -191,7 +185,7 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_cuota_recargo_equiv(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1

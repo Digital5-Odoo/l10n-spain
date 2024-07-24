@@ -4,14 +4,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import _, api, exceptions, fields, models
 
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import (
-    RefundCode,
-    RefundType,
-    SiNoType,
-    TicketBaiInvoiceState,
-)
-from odoo.addons.l10n_es_ticketbai_api.ticketbai.xml_schema import TicketBaiSchema
-
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -67,11 +59,11 @@ class AccountMove(models.Model):
     )
     tbai_refund_key = fields.Selection(
         selection=[
-            (RefundCode.R1.value, "Art. 80.1, 80.2, 80.6 and rights founded error"),
-            (RefundCode.R2.value, "Art. 80.3"),
-            (RefundCode.R3.value, "Art. 80.4"),
-            (RefundCode.R4.value, "Art. 80 - other"),
-            (RefundCode.R5.value, "Simplified Invoice"),
+            ("R1", "Art. 80.1, 80.2, 80.6 and rights founded error"),
+            ("R2", "Art. 80.3"),
+            ("R3", "Art. 80.4"),
+            ("R4", "Art. 80 - other"),
+            ("R5", "Simplified Invoice"),
         ],
         help="BOE-A-1992-28740. Ley 37/1992, de 28 de diciembre, del Impuesto sobre el "
         "Valor Añadido. Artículo 80. Modificación de la base imponible.",
@@ -79,8 +71,8 @@ class AccountMove(models.Model):
     )
     tbai_refund_type = fields.Selection(
         selection=[
-            # (RefundType.substitution.value, 'By substitution'), TODO: Remove from code
-            (RefundType.differences.value, "By differences")
+            # ("S", 'By substitution'), TODO: Remove from code
+            ("I", "By differences")
         ],
         copy=False,
     )
@@ -132,16 +124,16 @@ class AccountMove(models.Model):
             if refund_method and invoice_type:
                 if "out_refund" == invoice_type:
                     if not vals.get("tbai_refund_type", False):
-                        vals["tbai_refund_type"] = RefundType.differences.value
+                        vals["tbai_refund_type"] = "I"
                     if not vals.get("tbai_refund_key", False):
                         if vals.get("partner_id", False):
                             partner = self.env["res.partner"].browse(vals["partner_id"])
                             if partner.aeat_anonymous_cash_customer:
-                                vals["tbai_refund_key"] = RefundCode.R5.value
+                                vals["tbai_refund_key"] = "R5"
                             else:
-                                vals["tbai_refund_key"] = RefundCode.R1.value
+                                vals["tbai_refund_key"] = "R1"
                         else:
-                            vals["tbai_refund_key"] = RefundCode.R1.value
+                            vals["tbai_refund_key"] = "R1"
             if vals.get("fiscal_position_id", False):
                 fiscal_position = self.env["account.fiscal.position"].browse(
                     vals["fiscal_position_id"]
@@ -181,12 +173,12 @@ class AccountMove(models.Model):
     def onchange_tbai_reversed_entry_id(self):
         if self.reversed_entry_id:
             if not self.tbai_refund_type:
-                self.tbai_refund_type = RefundType.differences.value
+                self.tbai_refund_type = "I"
             if not self.tbai_refund_key:
                 if not self.partner_id.aeat_anonymous_cash_customer:
-                    self.tbai_refund_key = RefundCode.R1.value
+                    self.tbai_refund_key = "R1"
                 else:
-                    self.tbai_refund_key = RefundCode.R5.value
+                    self.tbai_refund_key = "R5"
 
     def tbai_prepare_invoice_values(self):
         def tbai_prepare_refund_values():
@@ -247,7 +239,7 @@ class AccountMove(models.Model):
         partner = self.partner_id
         vals = {
             "invoice_id": self.id,
-            "schema": TicketBaiSchema.TicketBai.value,
+            "schema": "TicketBai",
             "name": self._get_move_display_name(),
             "company_id": self.company_id.id,
             "number_prefix": self.tbai_get_value_serie_factura(),
@@ -285,10 +277,7 @@ class AccountMove(models.Model):
         retencion_soportada = self.tbai_get_value_retencion_soportada()
         if retencion_soportada:
             vals["tax_retention_amount_total"] = retencion_soportada
-        if (
-            self.tbai_is_invoice_refund()
-            and RefundType.differences.value == self.tbai_refund_type
-        ):
+        if self.tbai_is_invoice_refund() and self.tbai_refund_type == "I":
             tbai_prepare_refund_values()
         operation_date = self.tbai_get_value_fecha_operacion()
         if operation_date:
@@ -399,7 +388,7 @@ class AccountMove(models.Model):
         self.ensure_one()
         vals = {
             "cancelled_invoice_id": self.id,
-            "schema": TicketBaiSchema.AnulaTicketBai.value,
+            "schema": "AnulaTicketBai",
             "name": "{} - {}".format(_("Cancellation"), self.name),
             "company_id": self.company_id.id,
             "number_prefix": self.tbai_get_value_serie_factura(),
@@ -453,8 +442,8 @@ class AccountMove(models.Model):
                     )
                 if invoice.reversed_entry_id.tbai_invoice_id:
                     valid_refund = invoice.reversed_entry_id.tbai_invoice_id.state in [
-                        TicketBaiInvoiceState.pending.value,
-                        TicketBaiInvoiceState.sent.value,
+                        "pending",
+                        "sent",
                     ]
                     if not valid_refund:
                         error_refund_msg = _(
@@ -480,10 +469,7 @@ class AccountMove(models.Model):
         refund_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
             and "out_refund" == x.move_type
-            and (
-                not x.tbai_refund_type
-                or x.tbai_refund_type == RefundType.differences.value
-            )
+            and (not x.tbai_refund_type or x.tbai_refund_type == "I")
             and x.tbai_send_invoice
         )
 
@@ -500,8 +486,7 @@ class AccountMove(models.Model):
 
     def tbai_is_invoice_refund(self):
         if "out_refund" == self.move_type or (
-            "out_invoice" == self.move_type
-            and RefundType.substitution.value == self.tbai_refund_type
+            "out_invoice" == self.move_type and self.tbai_refund_type == "S"
         ):
             res = True
         else:
@@ -542,16 +527,16 @@ class AccountMove(models.Model):
 
     def tbai_get_value_simplified_invoice(self):
         if self.partner_id.aeat_anonymous_cash_customer:
-            res = SiNoType.S.value
+            res = "S"
         else:
-            res = SiNoType.N.value
+            res = "N"
         return res
 
     def tbai_get_value_factura_emitida_sustitucion_simplificada(self):
         if self.tbai_substitute_simplified_invoice:
-            res = SiNoType.S.value
+            res = "S"
         else:
-            res = SiNoType.N.value
+            res = "N"
         return res
 
     def tbai_get_value_base_rectificada(self):
@@ -579,7 +564,7 @@ class AccountMove(models.Model):
         taxes = self.mapped("invoice_line_ids.tax_ids") & irpf_taxes
         inv_id = self
         if 0 < len(taxes):
-            if RefundType.differences.value == self.tbai_refund_type:
+            if self.tbai_refund_type == "I":
                 sign = 1
             else:
                 sign = -1
@@ -632,7 +617,7 @@ class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     def tbai_get_value_cantidad(self):
-        if RefundType.differences.value == self.move_id.tbai_refund_type:
+        if self.move_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
@@ -640,7 +625,7 @@ class AccountMoveLine(models.Model):
 
     def tbai_get_value_descuento(self, price_unit):
         if self.discount:
-            if RefundType.differences.value == self.move_id.tbai_refund_type:
+            if self.move_id.tbai_refund_type == "I":
                 sign = -1
             else:
                 sign = 1
@@ -672,7 +657,7 @@ class AccountMoveLine(models.Model):
                 invoice_id.company_id,
                 invoice_id.date or invoice_id.invoice_date,
             )
-        if RefundType.differences.value == self.move_id.tbai_refund_type:
+        if self.move_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1

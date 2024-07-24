@@ -6,56 +6,6 @@ from odoo import _, api, exceptions, fields, models
 from ..utils import utils as tbai_utils
 
 
-class VATRegimeKey(tbai_utils.EnumValues):
-    K01 = "01"
-    K02 = "02"
-    K03 = "03"
-    K04 = "04"
-    K05 = "05"
-    K06 = "06"
-    K07 = "07"
-    K08 = "08"
-    K09 = "09"
-    K10 = "10"
-    K11 = "11"
-    K12 = "12"
-    K13 = "13"
-    K14 = "14"
-    K15 = "15"
-    K51 = "51"
-    K52 = "52"
-    K53 = "53"
-
-
-class NotSubjectToCause(tbai_utils.EnumValues):
-    OT = "OT"
-    RL = "RL"
-
-
-class ExemptedCause(tbai_utils.EnumValues):
-    E1 = "E1"
-    E2 = "E2"
-    E3 = "E3"
-    E4 = "E4"
-    E5 = "E5"
-    E6 = "E6"
-
-
-class NotExemptedType(tbai_utils.EnumValues):
-    S1 = "S1"
-    S2 = "S2"
-
-
-class SurchargeOrSimplifiedRegimeType(tbai_utils.EnumValues):
-    S = "S"
-    N = "N"
-
-
-class TicketBaiTaxType(tbai_utils.EnumValues):
-    service = "service"
-    provision_of_goods = "goods"
-
-
 class TicketBaiTax(models.Model):
     _name = "tbai.invoice.tax"
     _description = "TicketBAI Invoice taxes"
@@ -69,8 +19,8 @@ class TicketBaiTax(models.Model):
     is_subject_to = fields.Boolean("Is Subject to")
     not_subject_to_cause = fields.Selection(
         selection=[
-            (NotSubjectToCause.OT.value, "OT"),
-            (NotSubjectToCause.RL.value, "RL"),
+            ("OT", "OT"),
+            ("RL", "RL"),
         ],
         string="Not Subject to Cause",
         help="""
@@ -84,12 +34,12 @@ class TicketBaiTax(models.Model):
     is_exempted = fields.Boolean()
     exempted_cause = fields.Selection(
         selection=[
-            (ExemptedCause.E1.value, "E1"),
-            (ExemptedCause.E2.value, "E2"),
-            (ExemptedCause.E3.value, "E3"),
-            (ExemptedCause.E4.value, "E4"),
-            (ExemptedCause.E5.value, "E5"),
-            (ExemptedCause.E6.value, "E6"),
+            ("E1", "E1"),
+            ("E2", "E2"),
+            ("E3", "E3"),
+            ("E4", "E4"),
+            ("E5", "E5"),
+            ("E6", "E6"),
         ],
         help="""
     E1: Exenta por el artículo 20 de la Norma Foral del IVA.
@@ -101,7 +51,7 @@ class TicketBaiTax(models.Model):
     """,
     )
     not_exempted_type = fields.Selection(
-        selection=[(NotExemptedType.S1.value, "S1"), (NotExemptedType.S2.value, "S2")],
+        selection=[("S1", "S1"), ("S2", "S2")],
         help="""
     S1: Sin inversión del sujeto pasivo.
     S2: Con inversión del sujeto pasivo.
@@ -128,16 +78,16 @@ class TicketBaiTax(models.Model):
     )
     surcharge_or_simplified_regime = fields.Selection(
         selection=[
-            (SurchargeOrSimplifiedRegimeType.N.value, "N"),
-            (SurchargeOrSimplifiedRegimeType.S.value, "S"),
+            ("N", "N"),
+            ("S", "S"),
         ],
         string="Surcharge or Simplified Regime",
-        default=SurchargeOrSimplifiedRegimeType.N.value,
+        default="N",
     )
     type = fields.Selection(
         selection=[
-            (TicketBaiTaxType.service.value, "Service"),
-            (TicketBaiTaxType.provision_of_goods.value, "Provision of goods"),
+            ("service", "Service"),
+            ("goods", "Provision of goods"),
         ]
     )
 
@@ -222,8 +172,7 @@ class TicketBaiTax(models.Model):
             if (
                 record.is_subject_to
                 and not record.is_exempted
-                and record.surcharge_or_simplified_regime
-                == SurchargeOrSimplifiedRegimeType.S.value
+                and record.surcharge_or_simplified_regime == "S"
                 and record.re_amount
             ):
                 tbai_utils.check_str_percentage(
@@ -238,8 +187,7 @@ class TicketBaiTax(models.Model):
             if (
                 record.is_subject_to
                 and not record.is_exempted
-                and record.surcharge_or_simplified_regime
-                == SurchargeOrSimplifiedRegimeType.S.value
+                and record.surcharge_or_simplified_regime == "S"
                 and record.re_amount_total
             ):
                 tbai_utils.check_str_decimal(
@@ -258,8 +206,7 @@ class TicketBaiTax(models.Model):
                 and record.re_amount_total
                 and (
                     not record.surcharge_or_simplified_regime
-                    or record.surcharge_or_simplified_regime
-                    != SurchargeOrSimplifiedRegimeType.S.value
+                    or record.surcharge_or_simplified_regime != "S"
                 )
             ):
                 raise exceptions.ValidationError(
@@ -270,6 +217,6 @@ class TicketBaiTax(models.Model):
                     )
                     % {
                         "name": record.tbai_invoice_id.name,
-                        "val": SurchargeOrSimplifiedRegimeType.S.value,
+                        "val": "S",
                     }
                 )

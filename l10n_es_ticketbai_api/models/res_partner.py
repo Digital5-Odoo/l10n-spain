@@ -5,7 +5,6 @@ from odoo import _, api, exceptions, fields, models
 from odoo.tools.misc import ustr
 
 from ..utils import utils as tbai_utils
-from .ticketbai_invoice_customer import TicketBaiCustomerIdType
 
 
 class ResPartner(models.Model):
@@ -14,18 +13,18 @@ class ResPartner(models.Model):
     tbai_enabled = fields.Boolean(compute="_compute_tbai_enabled")
     tbai_partner_idtype = fields.Selection(
         selection=[
-            (TicketBaiCustomerIdType.T02.value, "VAT identification number"),
-            (TicketBaiCustomerIdType.T03.value, "Passport"),
+            ("02", "VAT identification number"),
+            ("03", "Passport"),
             (
-                TicketBaiCustomerIdType.T04.value,
+                "04",
                 "Official identification document issued by "
                 "the country or territory of residence",
             ),
-            (TicketBaiCustomerIdType.T05.value, "Residence certificate"),
-            (TicketBaiCustomerIdType.T06.value, "Other document"),
+            ("05", "Residence certificate"),
+            ("06", "Other document"),
         ],
         string="TicketBAI Identification Type Code",
-        default=TicketBaiCustomerIdType.T02.value,
+        default="02",
     )
     tbai_partner_identification_number = fields.Char(
         "TicketBAI Partner Identification Number",
