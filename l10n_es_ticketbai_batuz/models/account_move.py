@@ -185,14 +185,14 @@ class AccountMove(models.Model):
 
     def batuz_get_supplier_serie_factura(self):
         """Consultamos a hacienda cómo extraer la serie de una factura de proveedor.
-        Al no ser posible en algunos casos, decidimos tomar ciertos caracteres
-        como serie y el resto como número.
+        Al no ser posible en algunos casos, decidimos pasar como serie el año extraído
+          de la fecha de factura y dejar como número la referencia.
         Aunque la serie no es obligatoria en facturas recibidas,
         sí lo es en las rectificativas, por lo que es necesario informarla siempre."""
-        return self.ref[:3]
+        return self.invoice_date.strftime("%Y")
 
     def batuz_get_supplier_num_factura(self):
-        return self.ref[3:]
+        return self.ref
 
     def _get_lroe_identifier(self):
         """Get the LROE structure for a partner identifier.
