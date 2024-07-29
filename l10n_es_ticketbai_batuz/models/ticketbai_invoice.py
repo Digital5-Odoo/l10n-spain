@@ -16,11 +16,11 @@ class TicketBAIInvoice(models.Model):
 
     def send(self, **kwargs):
         self.ensure_one()
-        tbai_tax_agency_id = self.company_id.tbai_tax_agency_id
+        tax_agency_id = self.company_id.tax_agency_id
         if (
-            tbai_tax_agency_id
-            and tbai_tax_agency_id.id
-            == self.env.ref("l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia").id
+            tax_agency_id
+            and tax_agency_id.id
+            == self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia").id
         ):
             if self.schema == "TicketBai" and self.invoice_id:
                 return self.send_lroe_ticketbai(invoice_id=self.invoice_id.id, **kwargs)

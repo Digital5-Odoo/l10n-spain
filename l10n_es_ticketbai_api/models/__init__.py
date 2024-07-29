@@ -1,3 +1,4 @@
+from . import aeat_tax_agency
 from . import res_company
 from . import res_config_settings
 from . import res_country
@@ -9,4 +10,3 @@ from . import ticketbai_invoice_customer
 from . import ticketbai_invoice_line
 from . import ticketbai_invoice_tax
 from . import ticketbai_response
-from . import ticketbai_tax_agency
