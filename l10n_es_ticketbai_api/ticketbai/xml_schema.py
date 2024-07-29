@@ -183,7 +183,11 @@ class XMLSchema:
                                 (
                                     "etsi:SigPolicyId",
                                     (),
-                                    ("etsi:Identifier", (), tax_agency.sign_file_url),
+                                    (
+                                        "etsi:Identifier",
+                                        (),
+                                        tax_agency.tbai_sign_file_url,
+                                    ),
                                     (
                                         "etsi:Description",
                                         (),
@@ -199,7 +203,11 @@ class XMLSchema:
                                             "http://www.w3.org/2001/04/xmlenc#sha256",
                                         ),
                                     ),
-                                    ("ds:DigestValue", (), tax_agency.sign_file_hash),
+                                    (
+                                        "ds:DigestValue",
+                                        (),
+                                        tax_agency.tbai_sign_file_hash,
+                                    ),
                                 ),
                             ),
                         ),

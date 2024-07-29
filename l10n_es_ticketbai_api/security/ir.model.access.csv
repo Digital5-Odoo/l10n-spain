@@ -14,9 +14,5 @@ access_tbai_certificate_settings,tbai.certificate base.group_system,model_tbai_c
 access_tbai_response_settings,tbai.response base.group_system,model_tbai_response,base.group_system,1,1,1,0
 access_tbai_response_message_employee,tbai.response.message base.group_user,model_tbai_response_message,base.group_user,1,0,0,0
 access_tbai_response_message_settings,tbai.response.message base.group_system,model_tbai_response_message,base.group_system,1,1,1,0
-access_tbai_tax_agency_employee,tbai.tax.agency base.group_user,model_tbai_tax_agency,base.group_user,1,0,0,0
-access_tbai_tax_agency_settings,tbai.tax.agency base.group_system,model_tbai_tax_agency,base.group_system,1,1,1,0
-access_tbai_tax_agency_version_employee,tbai.tax.agency.version base.group_user,model_tbai_tax_agency_version,base.group_user,1,0,0,0
-access_tbai_tax_agency_version_settings,tbai.tax.agency.version base.group_system,model_tbai_tax_agency_version,base.group_system,1,1,1,0
 access_tbai_installation_settings,tbai.installation base.group_system,model_tbai_installation,base.group_system,1,1,1,0
 access_tbai_installation_employee,tbai.installation base.group_user,model_tbai_installation,base.group_user,1,0,0,0
