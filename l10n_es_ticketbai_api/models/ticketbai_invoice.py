@@ -83,10 +83,8 @@ class TicketBAIInvoice(models.Model):
         comodel_name="tbai.invoice.refund",
         inverse_name="tbai_invoice_id",
     )
-    qr_url = fields.Char("URL", compute="_compute_tbai_qr", store=True, copy=False)
-    qr = fields.Binary(
-        string="QR", compute="_compute_tbai_qr", store=True, copy=False, attachment=True
-    )
+    qr_url = fields.Char("URL", copy=False)
+    qr = fields.Binary(string="QR", copy=False, attachment=True)
     datas = fields.Binary(copy=False, attachment=True)
     datas_fname = fields.Char("File Name", copy=False)
     file_size = fields.Integer(copy=False)
@@ -422,13 +420,6 @@ class TicketBAIInvoice(models.Model):
                     )
                 record.tbai_identifier = tbai_identifier_with_crc
 
-    @api.depends(
-        "tbai_identifier",
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.test_qr_base_url",
-        "company_id.tbai_tax_agency_id.qr_base_url",
-    )
     def _compute_tbai_qr(self):
         """V 1.1
         Código QR TBAI, que consiste en un código con formato QR de tamaño mayor o igual
@@ -446,9 +437,9 @@ class TicketBAIInvoice(models.Model):
         ):
             if record.tbai_identifier:
                 if record.company_id.tbai_test_enabled:
-                    qr_base_url = record.company_id.tbai_tax_agency_id.test_qr_base_url
+                    qr_base_url = record.company_id.tax_agency_id.tbai_test_qr_base_url
                 else:
-                    qr_base_url = record.company_id.tbai_tax_agency_id.qr_base_url
+                    qr_base_url = record.company_id.tax_agency_id.tbai_qr_base_url
                 qr_values = record._get_qr_url_values()
                 qr_url_without_crc = "{}?{}".format(
                     qr_base_url,
@@ -472,14 +463,6 @@ class TicketBAIInvoice(models.Model):
                     img.save(temp, format="PNG")
                     record.qr = base64.b64encode(temp.getvalue())
 
-    @api.depends(
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.rest_url_invoice",
-        "company_id.tbai_tax_agency_id.test_rest_url_invoice",
-        "company_id.tbai_tax_agency_id.rest_url_cancellation",
-        "company_id.tbai_tax_agency_id.test_rest_url_cancellation",
-    )
     def _compute_api_url(self):
         for record in self.filtered(
             lambda ti: ti.state
@@ -490,16 +473,16 @@ class TicketBAIInvoice(models.Model):
         ):
             if record.schema == "TicketBai":
                 if record.company_id.tbai_test_enabled:
-                    url = record.company_id.tbai_tax_agency_id.test_rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_test_rest_url_invoice
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_rest_url_invoice
             elif record.schema == "AnulaTicketBai":
                 if record.company_id.tbai_test_enabled:
                     url = (
-                        record.company_id.tbai_tax_agency_id.test_rest_url_cancellation
+                        record.company_id.tax_agency_id.tbai_test_rest_url_cancellation
                     )
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_cancellation
+                    url = record.company_id.tax_agency_id.tbai_rest_url_cancellation
             else:
                 raise XMLSchemaModeNotSupported(
                     _("TicketBAI Invoice %s: XML Invoice schema not supported!")
@@ -712,7 +695,7 @@ class TicketBAIInvoice(models.Model):
     def get_tbai_xml_signed_and_signature_value(self):
         root = self.get_tbai_xml_unsigned()
         p12 = self.company_id.tbai_certificate_get_p12()
-        tax_agency = self.company_id.tbai_tax_agency_id
+        tax_agency = self.company_id.tax_agency_id
         signature_value = XMLSchema.sign(root, p12, tax_agency)
         return root, signature_value
 
@@ -726,6 +709,7 @@ class TicketBAIInvoice(models.Model):
         self.datas_fname = "%s.xsig" % self.name.replace("/", "-")
         self.file_size = len(self.datas)
         self.signature_value = signature_value
+        self._compute_tbai_qr()
         self.mark_as_pending()
         if self.schema == "TicketBai":
             self.company_id.tbai_last_invoice_id = self
@@ -743,7 +727,7 @@ class TicketBAIInvoice(models.Model):
         </complexType>
         :return: Tax Agency
         """
-        return {"IDVersionTBAI": self.company_id.tbai_tax_agency_id.version}
+        return {"IDVersionTBAI": self.company_id.tax_agency_id.tbai_version}
 
     def build_cabecera_factura(self):
         res = OrderedDict(
@@ -812,11 +796,9 @@ class TicketBAIInvoice(models.Model):
 
     def build_destinatarios(self):
         """Support only for one customer."""
-        gipuzkoa_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
-        )
-        araba_tax_agency = self.env.ref("l10n_es_ticketbai_api.tbai_tax_agency_araba")
-        tax_agency = self.company_id.tbai_tax_agency_id
+        gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
+        araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
+        tax_agency = self.company_id.tax_agency_id
         res = []
         if 100 < len(self.tbai_customer_ids):
             raise exceptions.ValidationError(
@@ -990,11 +972,9 @@ class TicketBAIInvoice(models.Model):
         return res
 
     def build_detalles_factura(self):
-        gipuzkoa_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
-        )
-        araba_tax_agency = self.env.ref("l10n_es_ticketbai_api.tbai_tax_agency_araba")
-        tax_agency = self.company_id.tbai_tax_agency_id
+        gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
+        araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
+        tax_agency = self.company_id.tax_agency_id
         if tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
             id_detalle_factura = self.build_id_detalle_factura()
             if id_detalle_factura:

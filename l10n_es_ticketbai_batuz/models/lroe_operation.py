@@ -145,7 +145,7 @@ class LROEOperation(models.Model):
         column2="invoice_id",
         string="Invoices",
     )
-    api_url = fields.Char("LROE API URL", compute="_compute_api_url")
+    api_url = fields.Char(string="LROE API URL")
     jobs_ids = fields.Many2many(
         comodel_name="queue.job",
         column1="lroe_operation_id",
@@ -154,14 +154,6 @@ class LROEOperation(models.Model):
         copy=False,
     )
 
-    @api.depends(
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.rest_url_invoice",
-        "company_id.tbai_tax_agency_id.test_rest_url_invoice",
-        "company_id.tbai_tax_agency_id.rest_url_cancellation",
-        "company_id.tbai_tax_agency_id.test_rest_url_cancellation",
-    )
     def _compute_api_url(self):
         for record in self:
             # Alta, modificación
@@ -170,17 +162,17 @@ class LROEOperation(models.Model):
                 "M00",
             ):
                 if record.company_id.tbai_test_enabled:
-                    url = record.company_id.tbai_tax_agency_id.test_rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_test_rest_url_invoice
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_rest_url_invoice
             # anulación
             elif record.type == "AN0":
                 if record.company_id.tbai_test_enabled:
                     url = (
-                        record.company_id.tbai_tax_agency_id.test_rest_url_cancellation
+                        record.company_id.tax_agency_id.tbai_test_rest_url_cancellation
                     )
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_cancellation
+                    url = record.company_id.tax_agency_id.tbai_rest_url_cancellation
             else:
                 raise LROEXMLSchemaModeNotSupported(
                     _("LROE Operation %s: XML schema not supported!") % record.name

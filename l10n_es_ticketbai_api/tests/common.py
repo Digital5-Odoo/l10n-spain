@@ -656,8 +656,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             vals.pop("refund_invoice_number")
         vals.update(
             {
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
+                "tax_agency_id": self.env.ref(
+                    "l10n_es_aeat.aeat_tax_agency_gipuzkoa"
                 ).id,
             }
         )
@@ -676,9 +676,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             vals.pop("refund_invoice_number")
         vals.update(
             {
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_araba"
-                ).id,
+                "tax_agency_id": self.env.ref("l10n_es_aeat.aeat_tax_agency_araba").id,
             }
         )
         company.write(vals)
@@ -711,8 +709,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             {
                 "tbai_enabled": True,
                 "tbai_test_enabled": True,
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
+                "tax_agency_id": self.env.ref(
+                    "l10n_es_aeat.aeat_tax_agency_gipuzkoa"
                 ).id,
                 "currency_id": self.env.ref("base.EUR").id,
                 "tbai_certificate_id": certificate.id,

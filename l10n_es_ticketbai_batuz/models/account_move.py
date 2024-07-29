@@ -115,18 +115,16 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        bizkaia_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia")
         for vals in vals_list:
             company = self.env["res.company"].browse(
                 vals.get("company_id", self.env.user.company_id.id)
             )
-            tbai_tax_agency_id = company.tbai_tax_agency_id
+            tax_agency_id = company.tax_agency_id
             if (
                 not company.tbai_enabled
-                or not tbai_tax_agency_id
-                or tbai_tax_agency_id.id
-                != self.env.ref(
-                    "l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia"
-                ).id
+                or not tax_agency_id
+                or tax_agency_id != bizkaia_tax_agency
             ):
                 continue
             invoice_type = vals.get("move_type", False) or self._context.get(
@@ -684,7 +682,7 @@ class AccountMove(models.Model):
         chapter_id = self.env["lroe.chapter"].search([("code", "=", chapter)], limit=1)
         res = {
             "lroe_chapter_id": chapter_id.id,
-            "type": operation_type.value,
+            "type": operation_type,
         }
         if subchapter:
             subchapter_id = self.env["lroe.chapter"].search([("code", "=", subchapter)])
@@ -709,6 +707,7 @@ class AccountMove(models.Model):
             subchapter=subchapter,
         )
         lroe_operation = lroe_model.sudo().create(vals)
+        lroe_operation._compute_api_url()
         return lroe_operation
 
     def _prepare_invoice_for_lroe(self, operation_type=None):
@@ -864,9 +863,7 @@ class AccountMove(models.Model):
 
     def _post(self, soft=True):
         res = super(AccountMove, self)._post(soft)
-        bizkaia_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia"
-        )
+        bizkaia_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia")
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
             and x.company_id.tax_agency_id == bizkaia_tax_agency

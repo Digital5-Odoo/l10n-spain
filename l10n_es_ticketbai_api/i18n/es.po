@@ -988,8 +988,7 @@ msgstr "Hacienda"
 #, python-format
 msgid "Tax agency cannot be modified after a TicketBAI invoice has been sent."
 msgstr ""
-"Número de identificación fiscal. Llénelo si la compañía está sujeta a "
-"impuestos. Usado por algunos documentos legales."
+"No es posible modificar la agencia tributaria si ya se han enviado facturas TicketBAI."
 
 #. module: l10n_es_ticketbai_api
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_api.field_res_partner__tbai_enabled
