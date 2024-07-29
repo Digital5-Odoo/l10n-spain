@@ -1,10 +1,8 @@
 # Copyright 2021 Binovo IT Human Project SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from datetime import datetime, timedelta
 
 from odoo import exceptions
 from odoo.tests.common import tagged
-from odoo.tools.misc import DEFAULT_SERVER_DATE_FORMAT
 
 from ..ticketbai.xml_schema import XMLSchema
 from .common import TestL10nEsTicketBAIAPI
@@ -91,7 +89,7 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
 
     def test_qr_url(self):
         uid = self.tech_user.id
-        qr_base_url = self.main_company.tbai_tax_agency_id.test_qr_base_url
+        qr_base_url = self.main_company.tax_agency_id.tbai_test_qr_base_url
         invoice = self.create_tbai_national_invoice(
             name="TBAITEST/00001",
             company_id=self.main_company.id,
@@ -102,25 +100,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
         self.assertEqual(invoice.state, "draft")
         self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
-        self.assertEqual(qr_base_url, invoice.qr_url[: len(qr_base_url)])
-        # Simulate new Tax Agency Version
-        current_version = self.main_company.tbai_tax_agency_id.get_current_version()
-        yesterday = (datetime.now() - timedelta(days=1)).strftime(
-            DEFAULT_SERVER_DATE_FORMAT
-        )
-        current_version.date_to = yesterday
-        version = self.env["tbai.tax.agency.version"].create(
-            {
-                "tbai_tax_agency_id": self.main_company.tbai_tax_agency_id.id,
-                "version": "0.0",
-                "qr_base_url": "https://qr-base-url.eus/",
-                "test_qr_base_url": "https://test-qr-base-url.eus/",
-                "test_rest_url_invoice": "",
-                "test_rest_url_cancellation": "",
-            }
-        )
-        qr_base_url = self.main_company.tbai_tax_agency_id.test_qr_base_url
-        self.assertEqual(qr_base_url, version.test_qr_base_url)
         self.assertEqual(qr_base_url, invoice.qr_url[: len(qr_base_url)])
 
     def _prepare_invoice_send_to_tax_agency(self):

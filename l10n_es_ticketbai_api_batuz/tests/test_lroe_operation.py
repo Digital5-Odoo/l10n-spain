@@ -113,8 +113,8 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
         company_vals.update(
             {
                 "tbai_certificate_id": certificate.id,
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia"
+                "tax_agency_id": self.env.ref(
+                    "l10n_es_aeat.aeat_tax_agency_bizkaia"
                 ).id,
             }
         )
