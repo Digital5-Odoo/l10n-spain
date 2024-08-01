@@ -300,11 +300,11 @@ facturación.\nThe limit invoice date taking into account the operation date \
                     )
 
         self.ensure_one()
-        partner = self.commercial_partner_id
         vals = {
             "invoice_id": self.id,
             "schema": "TicketBai",
             "name": self._get_move_display_name(),
+            "partner_id": self.commercial_partner_id.id,
             "company_id": self.company_id.id,
             "number_prefix": self.tbai_get_value_serie_factura(),
             "number": self.tbai_get_value_num_factura(),
@@ -320,24 +320,6 @@ facturación.\nThe limit invoice date taking into account the operation date \
             "vat_regime_key2": self.tbai_vat_regime_key2.code,
             "vat_regime_key3": self.tbai_vat_regime_key3.code,
         }
-        if partner and not partner.aeat_anonymous_cash_customer:
-            vals["tbai_customer_ids"] = [
-                (
-                    0,
-                    0,
-                    {
-                        "name": partner.tbai_get_value_apellidos_nombre_razon_social(),
-                        "country_code": partner._parse_aeat_vat_info()[0],
-                        "nif": partner.tbai_get_value_nif(),
-                        "identification_number": (
-                            partner.tbai_partner_identification_number or partner.vat
-                        ),
-                        "idtype": partner.tbai_partner_idtype,
-                        "address": partner.tbai_get_value_direccion(),
-                        "zip": partner.zip,
-                    },
-                )
-            ]
         retencion_soportada = self.tbai_get_value_retencion_soportada()
         if retencion_soportada:
             vals["tax_retention_amount_total"] = retencion_soportada

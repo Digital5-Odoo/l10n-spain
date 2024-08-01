@@ -617,21 +617,6 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
         )
         return self.env["tbai.invoice"].with_user(uid).create(vals)
 
-    def add_customer_from_odoo_partner_to_invoice(self, tbai_invoice_id, partner):
-        return self.env["tbai.invoice.customer"].create(
-            {
-                "tbai_invoice_id": tbai_invoice_id,
-                "name": partner.tbai_get_value_apellidos_nombre_razon_social(),
-                "country_code": partner.country_id.code.upper(),
-                "nif": partner.tbai_get_value_nif(),
-                "identification_number": partner.tbai_partner_identification_number
-                or partner.vat,
-                "idtype": partner.tbai_partner_idtype,
-                "address": partner.tbai_get_value_direccion(),
-                "zip": partner.zip,
-            }
-        )
-
     def create_certificate(self, company_id, cert_path, cert_password):
         with open(cert_path, "rb") as f:
             p12_file = f.read()
