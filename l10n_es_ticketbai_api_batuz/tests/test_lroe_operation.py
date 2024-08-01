@@ -81,7 +81,6 @@ class TestL10nEsTicketBAIAPIBatuz(TestL10nEsTicketBAIAPI):
             number_prefix="TBAITEST/",
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         return invoice
 
