@@ -50,17 +50,12 @@ class TicketBAIInvoice(models.Model):
         return self.env["tbai.response"].create(values)
 
     name = fields.Char(required=True)
+    partner_id = fields.Many2one(comodel_name="res.partner", required=True)
     company_id = fields.Many2one(comodel_name="res.company", required=True)
     previous_tbai_invoice_id = fields.Many2one(comodel_name="tbai.invoice", copy=False)
     signature_value = fields.Char(default="", copy=False)
     tbai_identifier = fields.Char(
         "TBAI Identifier", compute="_compute_tbai_identifier", store=True, copy=False
-    )
-    tbai_customer_ids = fields.One2many(
-        string="TicketBAI Invoice Recipients",
-        copy=True,
-        comodel_name="tbai.invoice.customer",
-        inverse_name="tbai_invoice_id",
     )
     tbai_response_ids = fields.One2many(
         comodel_name="tbai.response", inverse_name="tbai_invoice_id", string="Responses"
@@ -800,59 +795,61 @@ class TicketBAIInvoice(models.Model):
         araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
         tax_agency = self.company_id.tax_agency_id
         res = []
-        if 100 < len(self.tbai_customer_ids):
+        customer = self.partner_id
+        customer_res = OrderedDict()
+        nif = customer.tbai_get_value_nif()
+        if nif:
+            customer_res["NIF"] = nif
+        else:
+            id_otro = customer.tbai_build_id_otro()
+            if id_otro:
+                customer_res["IDOtro"] = id_otro
+        if "NIF" not in customer_res and "IDOtro" not in customer_res:
             raise exceptions.ValidationError(
                 _(
-                    "TicketBAI Invoice %s:\n"
-                    "Maximum 100 recipients allowed for each Invoice!"
+                    "TicketBAI Customer %(customer)s VAT Number or another "
+                    "type of identification is required."
                 )
-                % self.name
+                % {"customer": customer.name}
             )
-        for customer in self.tbai_customer_ids:
-            customer_res = OrderedDict()
-            if customer.nif:
-                customer_res["NIF"] = customer.nif
-            elif customer.idtype and customer.identification_number:
-                customer_res["IDOtro"] = OrderedDict()
-                if customer.country_code and customer.idtype != "02":
-                    customer_res["IDOtro"]["CodigoPais"] = customer.country_code
-                customer_res["IDOtro"]["IDType"] = customer.idtype
-                customer_res["IDOtro"]["ID"] = customer.identification_number
-            customer_res["ApellidosNombreRazonSocial"] = customer.name
-            if customer.zip:
-                customer_res["CodigoPostal"] = customer.zip
-            elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %(name)s:\n"
-                        "ZIP code for %(customer)s is required for the "
-                        "Tax Agency %(agency)s!"
-                    )
-                    % {
-                        "name": self.name,
-                        "customer": customer.name,
-                        "agency": tax_agency.name,
-                    }
+        customer_res[
+            "ApellidosNombreRazonSocial"
+        ] = customer.tbai_get_value_apellidos_nombre_razon_social()
+        if customer.zip:
+            customer_res["CodigoPostal"] = customer.zip[:5]
+        elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
+            raise exceptions.ValidationError(
+                _(
+                    "TicketBAI Invoice %(name)s:\n"
+                    "ZIP code for %(customer)s is required for the "
+                    "Tax Agency %(agency)s!"
                 )
-            if customer.address:
-                customer_res["Direccion"] = customer.address
-            elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %(name)s:\n"
-                        "Address for %(customer)s is required for the "
-                        "Tax Agency %(agency)s!"
-                    )
-                    % {
-                        "name": self.name,
-                        "customer": customer.name,
-                        "agency": tax_agency.name,
-                    }
+                % {
+                    "name": self.name,
+                    "customer": customer.name,
+                    "agency": tax_agency.name,
+                }
+            )
+        address = customer.tbai_get_value_direccion()
+        if address:
+            customer_res["Direccion"] = address
+        elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
+            raise exceptions.ValidationError(
+                _(
+                    "TicketBAI Invoice %(name)s:\n"
+                    "Address for %(customer)s is required for the "
+                    "Tax Agency %(agency)s!"
                 )
-            if (
-                "NIF" in customer_res or "IDOtro" in customer_res
-            ) and "ApellidosNombreRazonSocial" in customer_res:
-                res.append(OrderedDict({"IDDestinatario": customer_res}))
+                % {
+                    "name": self.name,
+                    "customer": customer.name,
+                    "agency": tax_agency.name,
+                }
+            )
+        if (
+            "NIF" in customer_res or "IDOtro" in customer_res
+        ) and "ApellidosNombreRazonSocial" in customer_res:
+            res.append(OrderedDict({"IDDestinatario": customer_res}))
         return res
 
     def build_detalle_exenta(self):
@@ -1232,26 +1229,15 @@ class TicketBAIInvoice(models.Model):
         return res
 
     def build_tipo_desglose(self):
-        spain_country_code = self.env.ref("base.es").code.upper()
+        spain_country_code = self.env.ref("base.es").code
         spanish_or_no_customers = False
-        if 0 == len(self.tbai_customer_ids):
+        partner = self.partner_id
+        if (
+            partner.tbai_partner_idtype == "02"
+            and partner.country_id.code == spain_country_code
+            and not partner.vat.startswith("N")
+        ):
             spanish_or_no_customers = True
-        else:
-            country_codes = list(set(self.tbai_customer_ids.mapped("country_code")))
-            if 1 < len(country_codes):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %s:\n"
-                        "All Invoice recipients must be from the same country."
-                    )
-                    % self.name
-                )
-            elif 1 == len(country_codes) and country_codes[0] == spain_country_code:
-                # Solo se admite desglose por operación cuando existe destinatario
-                # extranjero (tipo IDOtro o que sea un NIF que empiece por N)
-                spanish_or_no_customers = not (
-                    self.tbai_customer_ids[:1].nif or ""
-                ).startswith("N")
         if spanish_or_no_customers:
             res = {"DesgloseFactura": OrderedDict()}
             sujeta = self.build_sujeta()
