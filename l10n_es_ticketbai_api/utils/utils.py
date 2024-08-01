@@ -1,15 +1,8 @@
 # Copyright 2021 Binovo IT Human Project SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import re
-from enum import Enum
 
 from odoo import _, exceptions
-
-
-class EnumValues(Enum):
-    @classmethod
-    def values(cls):
-        return [x.value for _, x in cls.__members__.items()]
 
 
 def split_vat(vat):

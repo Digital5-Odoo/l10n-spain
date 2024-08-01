@@ -1,6 +1,8 @@
 # Copyright 2021 Binovo IT Human Project SL
 # Copyright 2021 Landoo Sistemas de Informacion SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+from collections import OrderedDict
+
 from odoo import _, api, exceptions, fields, models
 from odoo.tools.misc import ustr
 
@@ -78,6 +80,35 @@ class ResPartner(models.Model):
         """
         name = self.commercial_partner_id.name
         return name.strip()[:120]  # Remove leading and trailing whitespace
+
+    def tbai_build_id_otro(self):
+        """V 1.2
+        <complexType name="IDOtro">
+            <sequence>
+                <element name="CodigoPais" type="T:CountryType2" minOccurs="0"/>
+                <element name="IDType" type="T:IDTypeType"/>
+                <element name="ID" type="T:TextMax20Type"/>
+            </sequence>
+        </complexType>
+        """
+        self.ensure_one()
+        res = OrderedDict()
+        partner = self.commercial_partner_id
+        idtype = partner.tbai_partner_idtype
+        if self.vat:
+            vat = "".join(e for e in partner.vat if e.isalnum()).upper()
+        else:
+            vat = "NO_DISPONIBLE"
+        country_code = partner.tbai_get_partner_country_code()
+        if idtype == "02":
+            if country_code != "ES":
+                id_type = "06" if vat == "NO_DISPONIBLE" else "02"
+                res = OrderedDict([("IDType", id_type), ("ID", vat)])
+        elif idtype:
+            res = OrderedDict(
+                [("CodigoPais", country_code), ("IDType", idtype), ("ID", vat)]
+            )
+        return res
 
     def tbai_get_value_nif(self):
         """V 1.2
