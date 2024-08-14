@@ -787,7 +787,6 @@ class AccountMove(models.Model):
     def action_send_lroe_manually(self):
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
-            and x.invoice_date >= x.journal_id.tbai_active_date
             and (
                 x.move_type == "in_invoice"
                 or (
@@ -888,7 +887,6 @@ class AccountMove(models.Model):
         )
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
-            and x.invoice_date >= x.journal_id.tbai_active_date
             and x.company_id.tbai_tax_agency_id == bizkaia_tax_agency
             and (
                 x.move_type == "in_invoice"
@@ -900,6 +898,7 @@ class AccountMove(models.Model):
                 )
             )
             and x.tbai_send_invoice
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
             if lroe_invoice.lroe_state in (
