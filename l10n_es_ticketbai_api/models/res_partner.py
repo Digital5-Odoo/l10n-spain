@@ -3,8 +3,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from collections import OrderedDict
 
-from odoo import _, api, exceptions, fields, models
-from odoo.tools.misc import ustr
+from odoo import _, exceptions, models
 
 from ..utils import utils as tbai_utils
 
@@ -12,65 +11,14 @@ from ..utils import utils as tbai_utils
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
-    tbai_enabled = fields.Boolean(compute="_compute_tbai_enabled")
-    tbai_partner_idtype = fields.Selection(
-        selection=[
-            ("02", "VAT identification number"),
-            ("03", "Passport"),
-            (
-                "04",
-                "Official identification document issued by "
-                "the country or territory of residence",
-            ),
-            ("05", "Residence certificate"),
-            ("06", "Other document"),
-        ],
-        string="TicketBAI Identification Type Code",
-        default="02",
-    )
-    tbai_partner_identification_number = fields.Char(
-        "TicketBAI Partner Identification Number",
-        default="",
-        help="Used when the identification type code is not VAT identification number.",
-    )
-
-    @api.constrains("tbai_partner_identification_number")
-    def _check_tbai_partner_identification_number(self):
-        for record in self:
-            if record.tbai_partner_identification_number:
-                if 20 < len(record.tbai_partner_identification_number):
-                    raise exceptions.ValidationError(
-                        _(
-                            "Partner Identification Number %s longer than expected. "
-                            "Should be 20 characters max.!"
-                        )
-                        % record.name
-                    )
-
     def tbai_get_partner_country_code(self):
-        country_code, vat_number = (
-            self.vat and tbai_utils.split_vat(self.vat) or (None, None)
-        )
-        if not ustr(country_code).encode("utf-8").isalpha():
-            country_code = self.commercial_partner_id.country_id.code
-        elif isinstance(country_code, str):
-            country_code = country_code
-        elif self.country_id:
-            country_code = self.country_id.code
+        country_code = self.commercial_partner_id._parse_aeat_vat_info()[0]
         if not country_code:
             raise exceptions.ValidationError(
                 _("The invoice customer %s does not have a valid country assigned.")
                 % self.name
             )
         return country_code.upper()
-
-    def tbai_get_partner_vat_number(self):
-        country_code, vat_number = (
-            self.vat and tbai_utils.split_vat(self.vat) or (None, None)
-        )
-        if not ustr(country_code).encode("utf-8").isalpha():
-            vat_number = self.vat
-        return vat_number
 
     def tbai_get_value_apellidos_nombre_razon_social(self):
         """V 1.2
@@ -92,22 +40,26 @@ class ResPartner(models.Model):
         </complexType>
         """
         self.ensure_one()
-        res = OrderedDict()
         partner = self.commercial_partner_id
-        idtype = partner.tbai_partner_idtype
-        if self.vat:
-            vat = "".join(e for e in partner.vat if e.isalnum()).upper()
-        else:
-            vat = "NO_DISPONIBLE"
-        country_code = partner.tbai_get_partner_country_code()
-        if idtype == "02":
-            if country_code != "ES":
-                id_type = "06" if vat == "NO_DISPONIBLE" else "02"
-                res = OrderedDict([("IDType", id_type), ("ID", vat)])
-        elif idtype:
-            res = OrderedDict(
-                [("CodigoPais", country_code), ("IDType", idtype), ("ID", vat)]
-            )
+        res = OrderedDict()
+        (
+            country_code,
+            identifier_type,
+            identifier,
+        ) = partner._parse_aeat_vat_info()
+        res = OrderedDict(
+            [
+                ("CodigoPais", country_code),
+                ("IDType", identifier_type or "02"),
+                (
+                    "ID",
+                    country_code + identifier
+                    if partner._map_aeat_country_code(country_code)
+                    in partner._get_aeat_europe_codes()
+                    else identifier,
+                ),
+            ]
+        )
         return res
 
     def tbai_get_value_nif(self):
@@ -118,12 +70,16 @@ class ResPartner(models.Model):
             ([a-z|A-Z]{1}\\d{8}))" />
         :return: VAT Number for Customers from Spain or the Company associated partner.
         """
-        country_code = self.tbai_get_partner_country_code()
-        vat_number = self.tbai_get_partner_vat_number()
+        (
+            country_code,
+            identifier_type,
+            vat_number,
+        ) = self.commercial_partner_id._parse_aeat_vat_info()
         if (
             vat_number
             and country_code
             and self.env.ref("base.es").code.upper() == country_code
+            and identifier_type in ("02", "")
         ):
             tbai_utils.check_spanish_vat_number(
                 _("%s VAT Number") % self.name, vat_number
@@ -146,11 +102,3 @@ class ResPartner(models.Model):
             "%s" % (self.country_id.name or ""),
         ]
         return ", ".join([x for x in address_fields if x])
-
-    @api.depends("company_id")
-    def _compute_tbai_enabled(self):
-        tbai_enabled = any(self.env.companies.mapped("tbai_enabled"))
-        for partner in self:
-            partner.tbai_enabled = (
-                partner.company_id.tbai_enabled if partner.company_id else tbai_enabled
-            )
