@@ -199,22 +199,13 @@ class AccountMove(models.Model):
         self.ensure_one()
         res = OrderedDict()
         partner = self.partner_id.commercial_partner_id
-        idtype = partner.tbai_partner_idtype
-        if partner.vat:
-            vat = "".join(e for e in partner.vat if e.isalnum()).upper()
+        nif = partner.tbai_get_value_nif()
+        if nif:
+            res["NIF"] = nif
         else:
-            vat = "NO_DISPONIBLE"
-        country_code = partner._parse_aeat_vat_info()[0]
-        if idtype == "02":
-            if country_code != "ES":
-                id_type = "06" if vat == "NO_DISPONIBLE" else "02"
-                res["IDOtro"] = OrderedDict([("IDType", id_type), ("ID", vat)])
-            else:
-                res["NIF"] = vat[2:] if vat.startswith(country_code) else vat
-        elif idtype:
-            res["IDOtro"] = OrderedDict(
-                [("CodigoPais", country_code), ("IDType", idtype), ("ID", vat)]
-            )
+            id_otro = partner.tbai_build_id_otro()
+            if id_otro:
+                res["IDOtro"] = id_otro
         res[
             "ApellidosNombreRazonSocial"
         ] = partner.tbai_get_value_apellidos_nombre_razon_social()
@@ -224,7 +215,7 @@ class AccountMove(models.Model):
         """Inheritable method to allow control when an
         invoice are simplified or normal"""
         partner = self.partner_id.commercial_partner_id
-        is_simplified = partner.lroe_simplified_invoice
+        is_simplified = partner.aeat_simplified_invoice
         return is_simplified
 
     def _get_operation_date(self):
