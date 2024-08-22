@@ -22,12 +22,8 @@ class TicketBAIInvoice(models.Model):
             and tax_agency_id.id
             == self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia").id
         ):
-            if self.schema == "TicketBai" and self.invoice_id:
+            if self.invoice_id:
                 return self.send_lroe_ticketbai(invoice_id=self.invoice_id.id, **kwargs)
-            elif self.schema == "AnulaTicketBai" and self.cancelled_invoice_id:
-                return self.send_lroe_ticketbai(
-                    invoice_id=self.cancelled_invoice_id.id, **kwargs
-                )
             else:
                 return self.send_lroe_ticketbai(**kwargs)
         else:

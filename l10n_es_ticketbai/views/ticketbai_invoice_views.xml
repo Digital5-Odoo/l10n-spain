@@ -28,7 +28,6 @@
                 <sheet>
                     <group>
                         <group name="invoice" string="Invoice">
-                            <field name="schema" invisible="1" />
                             <field name="name" invisible="1" />
                             <field name="invoice_id" readonly="1" />
                             <field
@@ -46,6 +45,7 @@
                                 readonly="1"
                                 widget="CopyClipboardChar"
                             />
+                            <field name="schema" />
                         </group>
                         <group name="file" string="File">
                             <field
@@ -86,7 +86,7 @@
             <tree create="false" delete="false">
                 <field name="create_date" />
                 <field name="name" />
-                <field name="schema" invisible="1" />
+                <field name="schema" />
                 <field name="invoice_id" invisible="1" />
                 <field
                     name="qr_url"
