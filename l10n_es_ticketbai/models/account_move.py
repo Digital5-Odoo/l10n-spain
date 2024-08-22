@@ -32,14 +32,6 @@ class AccountMove(models.Model):
         inverse_name="invoice_id",
         string="TicketBAI Invoices",
     )
-    tbai_cancellation_id = fields.Many2one(
-        comodel_name="tbai.invoice", string="TicketBAI Cancellation", copy=False
-    )
-    tbai_cancellation_ids = fields.One2many(
-        comodel_name="tbai.invoice",
-        inverse_name="cancelled_invoice_id",
-        string="TicketBAI Cancellations",
-    )
     tbai_response_ids = fields.Many2many(
         comodel_name="tbai.response",
         compute="_compute_tbai_response_ids",
@@ -212,13 +204,10 @@ facturación.\nThe limit invoice date taking into account the operation date \
     @api.depends(
         "tbai_invoice_ids",
         "tbai_invoice_ids.state",
-        "tbai_cancellation_ids",
-        "tbai_cancellation_ids.state",
     )
     def _compute_tbai_response_ids(self):
         for record in self:
             response_ids = record.tbai_invoice_ids.mapped("tbai_response_ids").ids
-            response_ids += record.tbai_cancellation_ids.mapped("tbai_response_ids").ids
             record.tbai_response_ids = [(6, 0, response_ids)]
 
     @api.depends("date", "invoice_date")
@@ -431,7 +420,7 @@ facturación.\nThe limit invoice date taking into account the operation date \
     def tbai_prepare_cancellation_values(self):
         self.ensure_one()
         vals = {
-            "cancelled_invoice_id": self.id,
+            "invoice_id": self.id,
             "schema": "AnulaTicketBai",
             "name": "{} - {}".format(_("Cancellation"), self.name),
             "company_id": self.company_id.id,
@@ -446,7 +435,7 @@ facturación.\nThe limit invoice date taking into account the operation date \
             vals = record.tbai_prepare_cancellation_values()
             tbai_invoice = record.env["tbai.invoice"].create(vals)
             tbai_invoice.build_tbai_invoice()
-            record.tbai_cancellation_id = tbai_invoice.id
+            record.tbai_invoice_id = tbai_invoice.id
 
     def button_cancel(self):
         if self.company_id.tbai_enabled:
@@ -511,12 +500,12 @@ facturación.\nThe limit invoice date taking into account the operation date \
                             "Some of the original invoices have related tbai invoices "
                             "in inconsistent state please fix them beforehand."
                         )
-                if valid_refund and invoice.reversed_entry_id.tbai_cancellation_id:
-                    valid_refund = False
-                    error_refund_msg = _(
-                        "Some of the original invoices "
-                        "have related tbai cancelled invoices"
-                    )
+                    if invoice.reversed_entry_id.tbai_invoice_id.schema != "TicketBai":
+                        valid_refund = False
+                        error_refund_msg = _(
+                            "Some of the original invoices "
+                            "have related tbai cancelled invoices"
+                        )
                 if not valid_refund:
                     raise exceptions.ValidationError(error_refund_msg)
 
