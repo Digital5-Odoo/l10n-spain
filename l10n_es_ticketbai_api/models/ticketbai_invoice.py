@@ -50,7 +50,7 @@ class TicketBAIInvoice(models.Model):
         return self.env["tbai.response"].create(values)
 
     name = fields.Char(required=True)
-    partner_id = fields.Many2one(comodel_name="res.partner", required=True)
+    partner_id = fields.Many2one(comodel_name="res.partner")
     company_id = fields.Many2one(comodel_name="res.company", required=True)
     previous_tbai_invoice_id = fields.Many2one(comodel_name="tbai.invoice", copy=False)
     signature_value = fields.Char(default="", copy=False)
@@ -791,11 +791,13 @@ class TicketBAIInvoice(models.Model):
 
     def build_destinatarios(self):
         """Support only for one customer."""
+        res = []
+        customer = self.partner_id.commercial_partner_id
+        if customer.aeat_anonymous_cash_customer or not customer:
+            return res
         gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
         araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
         tax_agency = self.company_id.tax_agency_id
-        res = []
-        customer = self.partner_id
         customer_res = OrderedDict()
         nif = customer.tbai_get_value_nif()
         if nif:
@@ -1229,14 +1231,23 @@ class TicketBAIInvoice(models.Model):
         return res
 
     def build_tipo_desglose(self):
+        partner = self.partner_id.commercial_partner_id
         spain_country_code = self.env.ref("base.es").code
         spanish_or_no_customers = False
-        partner = self.partner_id
-        if (
-            partner.tbai_partner_idtype == "02"
-            and partner.country_id.code == spain_country_code
-            and not partner.vat.startswith("N")
-        ):
+        if partner:
+            (
+                country_code,
+                identifier_type,
+                identifier,
+            ) = partner._parse_aeat_vat_info()
+            if (
+                identifier_type in ("02", "")
+                and country_code == spain_country_code
+                and not identifier.startswith("N")
+            ) or partner.aeat_anonymous_cash_customer:
+                spanish_or_no_customers = True
+        else:
+            # sin cliente, probablemente una simplificada
             spanish_or_no_customers = True
         if spanish_or_no_customers:
             res = {"DesgloseFactura": OrderedDict()}
