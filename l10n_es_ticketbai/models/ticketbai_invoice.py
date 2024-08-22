@@ -8,7 +8,6 @@ class TicketBAIInvoice(models.Model):
     _inherit = "tbai.invoice"
 
     invoice_id = fields.Many2one(comodel_name="account.move")
-    cancelled_invoice_id = fields.Many2one(comodel_name="account.move")
 
     def get_ticketbai_api(self, **kwargs):
         self.ensure_one()
@@ -18,10 +17,8 @@ class TicketBAIInvoice(models.Model):
 
     def send(self, **kwargs):
         self.ensure_one()
-        if self.schema == "TicketBai" and self.invoice_id:
+        if self.invoice_id:
             return super().send(invoice_id=self.invoice_id.id, **kwargs)
-        elif self.schema == "AnulaTicketBai" and self.cancelled_invoice_id:
-            return super().send(invoice_id=self.cancelled_invoice_id.id, **kwargs)
         else:
             return super().send(**kwargs)
 
@@ -37,8 +34,8 @@ class TicketBAIInvoice(models.Model):
             record.cancel()
             if record.schema == "TicketBai" and record.invoice_id:
                 record.invoice_id._tbai_build_invoice()
-            elif record.schema == "AnulaTicketBai" and record.cancelled_invoice_id:
-                record.cancelled_invoice_id._tbai_invoice_cancel()
+            elif record.schema == "AnulaTicketBai" and record.invoice_id:
+                record.invoice_id._tbai_invoice_cancel()
 
 
 class TicketBAIInvoiceRefundOrigin(models.Model):
