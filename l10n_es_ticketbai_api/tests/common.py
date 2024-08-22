@@ -784,8 +784,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
                 "zip": "438-8501",
                 "country_id": self.env.ref("base.jp").id,
                 "street": "2500 Shingai, Iwata-shi",
-                "tbai_partner_idtype": "06",
-                "tbai_partner_identification_number": "JP3942800008",
+                "aeat_identification_type": "06",
+                "aeat_identification": "JP3942800008",
                 "phone": "+81 03-5713-3820",
                 "website": "https://global.yamaha-motor.com",
             }
@@ -800,7 +800,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
                 "country_id": self.env.ref("base.fr").id,
                 "vat": "FR82542065479",
                 "street": "2 BD DE L EUROPE",
-                "tbai_partner_idtype": "02",
+                "aeat_identification_type": "02",
                 "website": "www.groupe-psa.com",
             }
         )

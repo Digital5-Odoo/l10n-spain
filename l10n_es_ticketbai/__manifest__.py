@@ -36,7 +36,6 @@
         "views/account_journal_views.xml",
         "views/report_invoice.xml",
         "views/res_company_views.xml",
-        "views/res_partner_views.xml",
         "views/tax_map_views.xml",
         "views/vat_exemption_key_views.xml",
         "views/vat_regime_key_views.xml",
