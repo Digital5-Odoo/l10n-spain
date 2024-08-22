@@ -19,206 +19,81 @@
                     <field name="state" widget="statusbar" readonly="1" />
                 </header>
                 <sheet>
-                    <group name="operation_data">
-                        <field
-                            name="company_id"
-                            readonly="1"
-                            groups="base.group_multi_company"
-                        />
-                        <field name="type" readonly="1" />
-                        <field name="model" readonly="1" />
-                    </group>
-                    <group name="operation_file_data">
-                        <field
-                            name="xml_datas"
-                            string="XML File"
-                            filename="xml_datas_fname"
-                            readonly="1"
-                        />
-                        <field
-                            name="xml_datas_fname"
-                            invisible="1"
-                            class="oe_inline oe_right"
-                        />
-                        <field name="xml_file_size" invisible="1" />
-                    </group>
-                    <group name="operation_file_gzip_data">
-                        <field
-                            name="trx_gzip_file"
-                            string="GZIP File"
-                            filename="trx_gzip_fname"
-                            readonly="1"
-                        />
-                        <field
-                            name="trx_gzip_fname"
-                            invisible="1"
-                            class="oe_inline oe_right"
-                        />
-                        <field name="trx_gzip_fsize" invisible="1" />
-                    </group>
-                    <group
-                        name="customer_invoices"
-                        string="TBAI Customer Invoices"
-                        cols="4"
-                    >
-                        <field
-                            name="tbai_invoice_ids"
-                            nolabel="1"
-                            readonly="1"
-                            colspan="2"
+                    <group>
+                        <group name="operation_data" string="Operation Data">
+                            <field
+                                name="company_id"
+                                readonly="1"
+                                groups="base.group_multi_company"
+                            />
+                            <field name="type" readonly="1" />
+                            <field name="model" readonly="1" />
+                        </group>
+                        <group name="operation_file_data" string="Files">
+                            <field
+                                name="xml_datas"
+                                string="XML File"
+                                filename="xml_datas_fname"
+                                readonly="1"
+                            />
+                            <field
+                                name="xml_datas_fname"
+                                invisible="1"
+                                class="oe_inline oe_right"
+                            />
+                            <field name="xml_file_size" invisible="1" />
+                            <field
+                                name="trx_gzip_file"
+                                string="GZIP File"
+                                filename="trx_gzip_fname"
+                                readonly="1"
+                            />
+                            <field
+                                name="trx_gzip_fname"
+                                invisible="1"
+                                class="oe_inline oe_right"
+                            />
+                            <field name="trx_gzip_fsize" invisible="1" />
+                        </group>
+                        <group
+                            name="customer_invoices"
+                            string="TBAI Customer Invoices"
+                            cols="4"
+                            attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
                         >
-                            <form
-                                string="Customer Invoice"
-                                create="false"
-                                delete="false"
-                                edit="false"
-                                import="false"
+                            <field
+                                name="tbai_invoice_ids"
+                                nolabel="1"
+                                readonly="1"
+                                colspan="2"
+                            />
+                        </group>
+                        <group
+                            name="operation_responses"
+                            string="LROE Responses"
+                            cols="4"
+                        >
+                            <field
+                                name="response_ids"
+                                nolabel="1"
+                                readonly="1"
+                                colspan="2"
                             >
-                                <group name="invoice" string="Invoice">
-                                    <field name="name" invisible="1" />
-                                    <field
-                                        name="company_id"
-                                        readonly="1"
-                                        groups="base.group_multi_company"
-                                    />
-                                    <field name="tbai_identifier" readonly="1" />
-                                    <field name="signature_value" readonly="1" />
-                                </group>
-                                <group name="file" string="File">
-                                    <field
-                                        name="datas"
-                                        string="File"
-                                        filename="datas_fname"
-                                        readonly="1"
-                                    />
-                                    <field
-                                        name="datas_fname"
-                                        invisible="1"
-                                        class="oe_inline oe_right"
-                                    />
-                                    <field name="file_size" invisible="1" />
-                                </group>
-                                <group
-                                    name="qr"
-                                    string="QR Code"
-                                    attrs="{'invisible': [('parent.type', '!=', 'A00')]}"
+                                <tree
+                                    create="false"
+                                    delete="false"
+                                    edit="false"
+                                    decoration-danger="state not in ['Correcto', 'Parcialmente correcto']"
                                 >
-                                    <field name="qr_url" readonly="1" />
-                                    <field
-                                        name="qr"
-                                        widget="image"
-                                        readonly="1"
-                                        style="max-width: 40mm"
-                                    />
-                                </group>
-                            </form>
-                            <tree create="false" delete="false" edit="false">
-                                <field name="name" invisible="1" />
-                                <field
-                                    name="company_id"
-                                    readonly="1"
-                                    groups="base.group_multi_company"
-                                />
-                                <field name="tbai_identifier" readonly="1" />
-                            </tree>
-                        </field>
-                    </group>
-                    <group name="operation_responses" string="LROE Responses" cols="4">
-                        <field name="response_ids" nolabel="1" readonly="1" colspan="2">
-                            <form
-                                string="LROE Operation Global Response"
-                                create="false"
-                                delete="false"
-                                edit="false"
-                                import="false"
-                            >
-                              <group>
-                                  <group
-                                        name="source_operation"
-                                        string="LROE source Operation"
-                                    >
-                                      <field name="create_date" readonly="1" />
-                                  </group>
-                                  <group name="response_data" string="Responde data">
-                                      <field
-                                            name="xml"
-                                            string="File"
-                                            filename="xml_fname"
-                                            readonly="1"
-                                        />
-                                      <field
-                                            name="xml_fname"
-                                            invisible="1"
-                                            class="oe_inline oe_right"
-                                        />
-                                      <field name="code" readonly="1" />
-                                      <field name="description" readonly="1" />
-                                      <field name="state" readonly="1" />
-                                      <field name="lroe_record_id" readonly="1" />
-                                      <field name="lroe_record_date" readonly="1" />
-                                  </group>
-
-                                  <group
-                                        name="response_lines"
-                                        string="Response Lines"
-                                        cols="4"
-                                    >
-                                      <field
-                                            name="response_line_ids"
-                                            nolabel="1"
-                                            options="{'no_create_edit': True, 'no_open': True}"
-                                            colspan="4"
-                                        >
-                                          <form
-                                                create="false"
-                                                delete="false"
-                                                edit="false"
-                                                import="false"
-                                            >
-                                              <header>
-                                                  <field
-                                                        name="state"
-                                                        widget="statusbar"
-                                                        readonly="1"
-                                                    />
-                                              </header>
-                                              <sheet>
-                                                  <group
-                                                        name="lroe_response_main_group"
-                                                    >
-                                                      <field name="lroe_operation_id" />
-                                                      <field name="code" />
-                                                      <field name="description" />
-                                                  </group>
-                                              </sheet>
-                                          </form>
-                                          <tree
-                                                create="false"
-                                                delete="false"
-                                                decoration-danger="state=='Incorrecto'"
-                                            >
-                                              <field name="create_date" />
-                                              <field name="response_message" />
-                                              <field name="state" />
-                                        </tree>
-                                    </field>
-                                </group>
-                                </group>
-                            </form>
-                            <tree
-                                create="false"
-                                delete="false"
-                                edit="false"
-                                decoration-danger="state not in ['Correcto', 'Parcialmente correcto']"
-                            >
-                                <field name="create_date" readonly="1" />
-                                <field name="code" readonly="1" />
-                                <field name="description" readonly="1" />
-                                <field name="state" readonly="1" />
-                                <field name="lroe_record_id" readonly="1" />
-                                <field name="lroe_record_date" readonly="1" />
-                            </tree>
-                        </field>
+                                    <field name="create_date" readonly="1" />
+                                    <field name="code" readonly="1" />
+                                    <field name="description" readonly="1" />
+                                    <field name="state" readonly="1" />
+                                    <field name="lroe_record_id" readonly="1" />
+                                    <field name="lroe_record_date" readonly="1" />
+                                </tree>
+                            </field>
+                        </group>
                     </group>
                 </sheet>
             </form>
@@ -346,18 +221,72 @@
                 edit="false"
                 import="false"
             >
-                <group name="source_operation" string="LROE source Operation">
-                    <field name="create_date" readonly="1" />
-                    <field name="lroe_operation_id" readonly="1" />
-                </group>
-                <group name="response_data" string="Responde data">
-                    <field name="xml" widget="binary" readonly="1" />
-                    <field name="code" readonly="1" />
-                    <field name="description" readonly="1" />
-                    <field name="state" readonly="1" />
-                    <field name="lroe_record_id" readonly="1" />
-                    <field name="lroe_record_date" readonly="1" />
-                </group>
+                <header />
+                <sheet>
+                    <group>
+                        <group name="source_operation" string="LROE source Operation">
+                            <field name="create_date" readonly="1" />
+                            <field name="lroe_operation_id" readonly="1" />
+                        </group>
+                        <group name="response_data" string="Responde data">
+                            <field
+                                name="xml"
+                                string="File"
+                                filename="xml_fname"
+                                readonly="1"
+                            />
+                            <field
+                                name="xml_fname"
+                                invisible="1"
+                                class="oe_inline oe_right"
+                            />
+                            <field name="code" readonly="1" />
+                            <field name="description" readonly="1" />
+                            <field name="state" readonly="1" />
+                            <field name="lroe_record_id" readonly="1" />
+                            <field name="lroe_record_date" readonly="1" />
+                        </group>
+                        <group name="response_lines" string="Response Lines" cols="4">
+                            <field
+                                name="response_line_ids"
+                                nolabel="1"
+                                options="{'no_create_edit': True, 'no_open': True}"
+                                colspan="4"
+                            >
+                                <form
+                                    create="false"
+                                    delete="false"
+                                    edit="false"
+                                    import="false"
+                                >
+                                    <header>
+                                        <field
+                                            name="state"
+                                            widget="statusbar"
+                                            readonly="1"
+                                        />
+                                    </header>
+                                    <sheet>
+                                        <group name="lroe_response_main_group">
+                                            <field name="lroe_operation_id" />
+                                            <field name="code" />
+                                            <field name="description" />
+                                        </group>
+                                    </sheet>
+                                </form>
+                                <tree
+                                    create="false"
+                                    delete="false"
+                                    decoration-danger="state=='Incorrecto'"
+                                >
+                                    <field name="create_date" />
+                                    <field name="response_message" />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </group>
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>
@@ -366,7 +295,12 @@
         <field name="name">lroe.operation.response.tree.view</field>
         <field name="model">lroe.operation.response</field>
         <field name="arch" type="xml">
-            <tree create="false" delete="false" edit="false">
+            <tree
+                create="false"
+                delete="false"
+                edit="false"
+                decoration-danger="state not in ['Correcto', 'Parcialmente correcto']"
+            >
                 <field name="create_date" readonly="1" />
                 <field name="lroe_operation_id" readonly="1" />
                 <field name="code" readonly="1" />
