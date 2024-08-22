@@ -30,7 +30,6 @@
         <field name="zip">1015</field>
         <field name="country_id" ref="base.ch" />
         <field name="vat">CHE-123.456.788 TVA</field>
-        <field name="tbai_partner_idtype">02</field>
         <field name="street">EPFL Innovation Park, Bat. A</field>
         <field name="website">https://odoo-community.org/</field>
         <field
@@ -46,7 +45,6 @@
         <field name="zip">08021</field>
         <field name="country_id" ref="base.es" />
         <field name="vat">A08049447</field>
-        <field name="tbai_partner_idtype">02</field>
         <field name="street">C/ DIAGONAL NUM, 550 P.PL PTA.2.</field>
         <field name="website">www.derbi.es</field>
         <field
@@ -62,7 +60,6 @@
         <field name="zip">78300</field>
         <field name="country_id" ref="base.fr" />
         <field name="vat">FR82542065479</field>
-        <field name="tbai_partner_idtype">02</field>
         <field name="street">2 BD DE L EUROPE</field>
         <field name="website">www.groupe-psa.com</field>
         <field
@@ -103,8 +100,8 @@
         <field name="zip">438-8501</field>
         <field name="street">2500 Shingai, Iwata-shi</field>
         <field name="country_id" ref="base.jp" />
-        <field name="tbai_partner_idtype">06</field>
-        <field name="tbai_partner_identification_number">JP3942800008</field>
+        <field name="aeat_identification_type">06</field>
+        <field name="aeat_identification">JP3942800008</field>
         <field name="phone">+81 03-5713-3820</field>
         <field name="website">https://global.yamaha-motor.com</field>
         <field
