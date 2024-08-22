@@ -49,12 +49,6 @@
                             attrs="{'invisible': [('tbai_invoice_id', '=', False)]}"
                         />
                             <field
-                            name="tbai_cancellation_id"
-                            readonly="1"
-                            options="{'no_create':True}"
-                            attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"
-                        />
-                            <field
                             name="tbai_description_operation"
                             widget="char"
                             attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"
@@ -142,7 +136,7 @@
                     <group
                         name="tbai_send"
                         string="Files Sent"
-                        attrs="{'invisible': [('tbai_invoice_ids', '=', []),('tbai_cancellation_ids', '=', [])]}"
+                        attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
                         cols="4"
                     >
                         <group
@@ -153,20 +147,6 @@
                         >
                             <field
                                 name="tbai_invoice_ids"
-                                readonly="1"
-                                options="{'no_open':True,'no_create':True}"
-                                nolabel="1"
-                                colspan="2"
-                            />
-                        </group>
-                        <group
-                            name="tbai_sent_customer_cancellations"
-                            string="Customer Cancellations"
-                            colspan="4"
-                            attrs="{'invisible': [('tbai_cancellation_ids', '=', [])]}"
-                        >
-                            <field
-                                name="tbai_cancellation_ids"
                                 readonly="1"
                                 options="{'no_open':True,'no_create':True}"
                                 nolabel="1"
