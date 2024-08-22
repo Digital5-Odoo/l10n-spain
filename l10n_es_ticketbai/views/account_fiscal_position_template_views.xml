@@ -9,37 +9,39 @@
         <field name="priority" eval="1000" />
         <field name="arch" type="xml">
             <form string="Fiscal Position Template">
-                <group>
-                    <field name="name" />
-                </group>
-                <group name="tbai_vat_regimes" string="VAT Regimes">
-                    <field
-                        name="tbai_vat_regime_key"
-                        options="{'no_open':True,'no_create':True}"
-                    />
-                    <field
-                        name="tbai_vat_regime_key2"
-                        options="{'no_open':True,'no_create':True}"
-                    />
-                    <field
-                        name="tbai_vat_regime_key3"
-                        options="{'no_open':True,'no_create':True}"
-                    />
-                </group>
-                <group name="tbai_vat_exemptions" string="VAT Exemptions">
-                    <field name="tbai_vat_exemption_ids" nolabel="1">
-                        <tree editable="bottom">
-                            <field
-                                name="tax_id"
-                                options="{'no_open':True,'no_create':True}"
-                            />
-                            <field
-                                name="tbai_vat_exemption_key"
-                                options="{'no_open':True,'no_create':True}"
-                            />
-                        </tree>
-                    </field>
-                </group>
+                <sheet>
+                    <group>
+                        <field name="name" />
+                    </group>
+                    <group name="tbai_vat_regimes" string="VAT Regimes">
+                        <field
+                            name="tbai_vat_regime_key"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                        <field
+                            name="tbai_vat_regime_key2"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                        <field
+                            name="tbai_vat_regime_key3"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                    </group>
+                    <group name="tbai_vat_exemptions" string="VAT Exemptions">
+                        <field name="tbai_vat_exemption_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field
+                                    name="tax_id"
+                                    options="{'no_open':True,'no_create':True}"
+                                />
+                                <field
+                                    name="tbai_vat_exemption_key"
+                                    options="{'no_open':True,'no_create':True}"
+                                />
+                            </tree>
+                        </field>
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>

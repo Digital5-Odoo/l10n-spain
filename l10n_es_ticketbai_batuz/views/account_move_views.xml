@@ -18,7 +18,7 @@
                     name="lroe_responses_lines"
                     string="LROE Responses"
                     attrs="{'invisible': [('lroe_response_line_ids', '=', [])]}"
-                    cols="4"
+                    colspan="4"
                 >
                     <field
                         name="lroe_response_line_ids"
@@ -65,7 +65,7 @@
                     string="Resend to LROE"
                     name="action_send_lroe_manually"
                     groups="l10n_es_aeat.group_account_aeat"
-                    attrs="{'invisible': ['|', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('lroe_state', 'not in', ['error','recorded_warning'])]}"
+                    attrs="{'invisible': ['|', '|', ('state', '=', 'draft'), ('move_type', 'not in', ['in_invoice', 'in_refund']), ('lroe_state', 'not in', ['error','recorded_warning'])]}"
                 />
             </button>
             <xpath expr="//notebook" position="inside">

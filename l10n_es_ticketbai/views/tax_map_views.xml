@@ -18,13 +18,15 @@
         <field name="model">tbai.tax.map</field>
         <field name="arch" type="xml">
             <form string="TicketBAI Tax Map">
-                <group colspan="4">
-                    <field name="code" />
-                    <field name="name" />
-                </group>
-                <group string="Taxes" colspan="4">
-                    <field name="tax_template_ids" nolabel="1" />
-                </group>
+                <sheet>
+                    <group>
+                        <field name="name" />
+                        <field name="code" />
+                    </group>
+                    <group string="Taxes">
+                        <field name="tax_template_ids" nolabel="1" colspan="2" />
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>

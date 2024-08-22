@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright 2024 Digital5, S.L.
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record id="tbai_invoice_form_inherit_batuz" model="ir.ui.view">
+        <field name="name">tbai.invoice.view.form.inherit.batuz</field>
+        <field name="model">tbai.invoice</field>
+        <field name="inherit_id" ref="l10n_es_ticketbai.tbai_invoice_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='file_size']" position="after">
+                <field name="lroe_operation_id" />
+            </xpath>
+        </field>
+    </record>
+</odoo>
