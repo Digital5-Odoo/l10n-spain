@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2021 Binovo IT Human Project SL
+     Copyright 2022 Landoo Sistemas de Informacion SL
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record id="view_pos_pos_form_inherit" model="ir.ui.view">
+        <field name="name">pos.order.form.inherit</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form" />
+        <field name="arch" type="xml">
+            <button name="refund" position="attributes">
+                <attribute name="attrs">{'invisible':['|', ('state','=','draft'),
+                                                    ('tbai_enabled', '=', True)]}
+                </attribute>
+            </button>
+            <field name="partner_id" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'readonly':[('tbai_enabled', '=', True)]}</attribute>
+            </field>
+            <page name="extra" position="after">
+                <page
+                    name="ticketbai"
+                    string="TicketBAI"
+                    attrs="{'invisible': [('tbai_enabled', '=', False)]}"
+                >
+                    <group name="ticketbai">
+                        <group name="ticketbai_general" string="General">
+                            <field name="tbai_enabled" invisible="1" />
+                            <field
+                                name="tbai_invoice_id"
+                                readonly="1"
+                                options="{'no_create':True}"
+                                attrs="{'invisible': [('tbai_invoice_id', '=', False)]}"
+                            />
+                                <field
+                                name="tbai_description_operation"
+                                widget="char"
+                                attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"
+                            />
+                        </group>
+                        <group name="tbai_vat_regimes" string="VAT Regimes">
+                            <field
+                                name="tbai_vat_regime_key"
+                                readonly="1"
+                                options="{'no_open':True,'no_create':True}"
+                            />
+                        </group>
+                    </group>
+                    <group
+                        name="tbai_sent_customer_invoices"
+                        string="Files Sent"
+                        attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
+                        colspan="4"
+                    >
+                            <field
+                            name="tbai_invoice_ids"
+                            readonly="1"
+                            options="{'no_open':True,'no_create':True}"
+                            nolabel="1"
+                            colspan="2"
+                        />
+                    </group>
+                    <group
+                        name="tbai_responses"
+                        string="Responses"
+                        attrs="{'invisible': [('tbai_response_ids', '=', [])]}"
+                        colspan="4"
+                    >
+                            <field
+                            name="tbai_response_ids"
+                            nolabel="1"
+                            options="{'no_create_edit': True}"
+                            colspan="2"
+                        >
+                                <form>
+                                    <header>
+                                        <field
+                                        name="state"
+                                        widget="statusbar"
+                                        readonly="1"
+                                    />
+                                    </header>
+                                    <sheet>
+                                        <group name="tbai_response_main_group">
+                                            <field
+                                            name="xml"
+                                            filename="xml_fname"
+                                            readonly="1"
+                                        />
+                                            <field
+                                            name="xml_fname"
+                                            invisible="1"
+                                            class="oe_inline oe_right"
+                                        />
+                                        </group>
+                                        <group
+                                        name="tbai_response_messages_group"
+                                        string="Messages"
+                                        cols="4"
+                                    >
+                                            <field
+                                            name="tbai_response_message_ids"
+                                            nolabel="1"
+                                            readonly="1"
+                                            colspan="2"
+                                        >
+                                                <form>
+                                                    <group>
+                                                        <field
+                                                        name="tbai_response_id"
+                                                        invisible="1"
+                                                    />
+                                                        <field
+                                                        name="code"
+                                                        readonly="1"
+                                                    />
+                                                        <field
+                                                        name="description"
+                                                        readonly="1"
+                                                    />
+                                                    </group>
+                                                </form>
+                                                <tree create="false" delete="false">
+                                                    <field
+                                                    name="tbai_response_id"
+                                                    invisible="1"
+                                                />
+                                                    <field name="code" readonly="1" />
+                                                    <field
+                                                    name="description"
+                                                    readonly="1"
+                                                />
+                                                </tree>
+                                            </field>
+                                        </group>
+                                    </sheet>
+                                </form>
+                                <tree create="false" delete="false">
+                                    <field name="create_date" />
+                                    <field
+                                    name="tbai_response_message_ids"
+                                    widget="many2many_tags"
+                                />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </group>
+                </page>
+            </page>
+        </field>
+    </record>
+</odoo>
