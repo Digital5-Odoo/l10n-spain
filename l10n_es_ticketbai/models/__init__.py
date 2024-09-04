@@ -1,4 +1,5 @@
 from . import account_fiscal_position
+from . import tbai_mixin
 from . import account_journal
 from . import account_move
 from . import account_tax

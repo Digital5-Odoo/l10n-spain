@@ -8,84 +8,14 @@ from odoo import _, api, exceptions, fields, models
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _name = "account.move"
+    _inherit = ["account.move", "tbai.mixin"]
 
-    def _default_tbai_vat_regime_key(self):
-        context = self.env.context
-        invoice_type = context.get("move_type", context.get("default_move_type"))
-        if invoice_type in ["out_invoice", "out_refund"]:
-            key = self.env["tbai.vat.regime.key"].search([("code", "=", "01")], limit=1)
-            return key
-
-    tbai_enabled = fields.Boolean(related="company_id.tbai_enabled", readonly=True)
     tbai_send_invoice = fields.Boolean(related="journal_id.tbai_send_invoice")
-    tbai_substitution_invoice_id = fields.Many2one(
-        comodel_name="account.move",
-        copy=False,
-        help="Link between a validated Customer Invoice and its substitute.",
-    )
-    tbai_invoice_id = fields.Many2one(
-        comodel_name="tbai.invoice", string="TicketBAI Invoice", copy=False
-    )
     tbai_invoice_ids = fields.One2many(
         comodel_name="tbai.invoice",
         inverse_name="invoice_id",
         string="TicketBAI Invoices",
-    )
-    tbai_response_ids = fields.Many2many(
-        comodel_name="tbai.response",
-        compute="_compute_tbai_response_ids",
-        string="Responses",
-    )
-    tbai_datetime_invoice = fields.Datetime(
-        compute="_compute_tbai_datetime_invoice", store=True, copy=False
-    )
-    tbai_date_operation = fields.Datetime("Operation Date", copy=False)
-    tbai_description_operation = fields.Text(
-        "Operation Description",
-        default="/",
-        copy=False,
-        compute="_compute_tbai_description",
-        store=True,
-    )
-    tbai_substitute_simplified_invoice = fields.Boolean(
-        "Substitute Simplified Invoice", copy=False
-    )
-    tbai_refund_key = fields.Selection(
-        selection=[
-            ("R1", "Art. 80.1, 80.2, 80.6 and rights founded error"),
-            ("R2", "Art. 80.3"),
-            ("R3", "Art. 80.4"),
-            ("R4", "Art. 80 - other"),
-            ("R5", "Simplified Invoice"),
-        ],
-        help="BOE-A-1992-28740. Ley 37/1992, de 28 de diciembre, del Impuesto sobre el "
-        "Valor Añadido. Artículo 80. Modificación de la base imponible.",
-        copy=False,
-    )
-    tbai_refund_type = fields.Selection(
-        selection=[
-            # ("S", 'By substitution'), TODO: Remove from code
-            ("I", "By differences")
-        ],
-        copy=False,
-    )
-    tbai_vat_regime_key = fields.Many2one(
-        comodel_name="tbai.vat.regime.key",
-        string="VAT Regime Key",
-        copy=True,
-        default=_default_tbai_vat_regime_key,
-    )
-    tbai_vat_regime_key2 = fields.Many2one(
-        comodel_name="tbai.vat.regime.key", string="VAT Regime 2nd Key", copy=True
-    )
-    tbai_vat_regime_key3 = fields.Many2one(
-        comodel_name="tbai.vat.regime.key", string="VAT Regime 3rd Key", copy=True
-    )
-    tbai_refund_origin_ids = fields.One2many(
-        comodel_name="tbai.invoice.refund.origin",
-        inverse_name="account_refund_invoice_id",
-        string="TicketBAI Refund Origin References",
     )
 
     @api.constrains("state")
@@ -190,13 +120,6 @@ facturación.\nThe limit invoice date taking into account the operation date \
                                 vals["tbai_refund_key"] = "R1"
                         else:
                             vals["tbai_refund_key"] = "R1"
-            if vals.get("fiscal_position_id", False):
-                fiscal_position = self.env["account.fiscal.position"].browse(
-                    vals["fiscal_position_id"]
-                )
-                vals["tbai_vat_regime_key"] = fiscal_position.tbai_vat_regime_key.id
-                vals["tbai_vat_regime_key2"] = fiscal_position.tbai_vat_regime_key2.id
-                vals["tbai_vat_regime_key3"] = fiscal_position.tbai_vat_regime_key3.id
             if "name" in vals and vals["name"]:
                 vals["tbai_description_operation"] = vals["name"]
         return super().create(vals)
@@ -215,13 +138,6 @@ facturación.\nThe limit invoice date taking into account the operation date \
         for record in self:
             record.tbai_datetime_invoice = fields.Datetime.now()
 
-    @api.onchange("fiscal_position_id", "partner_id")
-    def onchange_fiscal_position_id_tbai_vat_regime_key(self):
-        if self.fiscal_position_id:
-            self.tbai_vat_regime_key = self.fiscal_position_id.tbai_vat_regime_key.id
-            self.tbai_vat_regime_key2 = self.fiscal_position_id.tbai_vat_regime_key2.id
-            self.tbai_vat_regime_key3 = self.fiscal_position_id.tbai_vat_regime_key3.id
-
     @api.onchange("reversed_entry_id")
     def onchange_tbai_reversed_entry_id(self):
         if self.reversed_entry_id:
@@ -233,209 +149,14 @@ facturación.\nThe limit invoice date taking into account the operation date \
                 else:
                     self.tbai_refund_key = "R5"
 
-    def tbai_prepare_invoice_values(self):
-        def tbai_prepare_refund_values():
-            refunded_inv = self.reversed_entry_id
-            if refunded_inv:
-                vals.update(
-                    {
-                        "is_invoice_refund": True,
-                        "refund_code": self.tbai_refund_key,
-                        "refund_type": self.tbai_refund_type,
-                        "tbai_invoice_refund_ids": [
-                            (
-                                0,
-                                0,
-                                {
-                                    "number_prefix": (
-                                        refunded_inv.tbai_get_value_serie_factura()
-                                    ),
-                                    "number": (
-                                        refunded_inv.tbai_get_value_num_factura()
-                                    ),
-                                    "expedition_date": (
-                                        refunded_inv.tbai_get_value_fecha_exp_factura()
-                                    ),
-                                },
-                            )
-                        ],
-                    }
-                )
-            else:
-                if self.tbai_refund_origin_ids:
-                    refund_id_dicts = []
-                    for refund_origin_id in self.tbai_refund_origin_ids:
-                        expedition_date = fields.Date.from_string(
-                            refund_origin_id.expedition_date
-                        ).strftime("%d-%m-%Y")
-                        refund_id_dicts.append(
-                            (
-                                0,
-                                0,
-                                {
-                                    "number_prefix": refund_origin_id.number_prefix,
-                                    "number": refund_origin_id.number,
-                                    "expedition_date": expedition_date,
-                                },
-                            )
-                        )
-                    vals.update(
-                        {
-                            "is_invoice_refund": True,
-                            "refund_code": self.tbai_refund_key,
-                            "refund_type": self.tbai_refund_type,
-                            "tbai_invoice_refund_ids": refund_id_dicts,
-                        }
-                    )
-
-        self.ensure_one()
-        vals = {
-            "invoice_id": self.id,
-            "schema": "TicketBai",
-            "name": self._get_move_display_name(),
-            "partner_id": self.commercial_partner_id.id,
-            "company_id": self.company_id.id,
-            "number_prefix": self.tbai_get_value_serie_factura(),
-            "number": self.tbai_get_value_num_factura(),
-            "expedition_date": self.tbai_get_value_fecha_exp_factura(),
-            "expedition_hour": self.tbai_get_value_hora_exp_factura(),
-            "simplified_invoice": self.tbai_get_value_simplified_invoice(),
-            "substitutes_simplified_invoice": (
-                self.tbai_get_value_factura_emitida_sustitucion_simplificada()
-            ),
-            "description": self.tbai_description_operation[:250],
-            "amount_total": "%.2f" % self.amount_total_signed,
-            "vat_regime_key": self.tbai_vat_regime_key.code,
-            "vat_regime_key2": self.tbai_vat_regime_key2.code,
-            "vat_regime_key3": self.tbai_vat_regime_key3.code,
-        }
-        retencion_soportada = self.tbai_get_value_retencion_soportada()
-        if retencion_soportada:
-            vals["tax_retention_amount_total"] = retencion_soportada
-        if self.tbai_is_invoice_refund() and self.tbai_refund_type == "I":
-            tbai_prepare_refund_values()
-        operation_date = self.tbai_get_value_fecha_operacion()
-        if operation_date:
-            vals["operation_date"] = operation_date
-        gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
-        araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
-        tax_agency = self.company_id.tax_agency_id
-        if tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-            lines = []
-            for line in self.invoice_line_ids.filtered(
-                lambda l: l.display_type not in ["line_note", "line_section"]
-            ):
-                description_line = line.name[:250] if line.name else ""
-                if (
-                    self.company_id.tbai_protected_data
-                    and self.company_id.tbai_protected_data_txt
-                ):
-                    description_line = self.company_id.tbai_protected_data_txt[:250]
-                price_unit = line.tbai_get_price_unit()
-                lines.append(
-                    (
-                        0,
-                        0,
-                        {
-                            "description": description_line,
-                            "quantity": line.tbai_get_value_cantidad(),
-                            "price_unit": "%.8f" % price_unit,
-                            "discount_amount": line.tbai_get_value_descuento(
-                                price_unit
-                            ),
-                            "amount_total": line.tbai_get_value_importe_total(),
-                        },
-                    )
-                )
-            vals["tbai_invoice_line_ids"] = lines
-        taxes = []
-        # Discard RecargoEquivalencia and IRPF Taxes
-        tbai_maps = self.env["tbai.tax.map"].search([("code", "in", ("RE", "IRPF"))])
-        exclude_taxes = self.company_id.get_taxes_from_templates(
-            tbai_maps.mapped("tax_template_ids")
-        )
-        for tax in (
-            self.invoice_line_ids.filtered(lambda x: x.tax_ids)
-            .mapped("tax_ids")
-            .filtered(lambda t: t not in exclude_taxes)
-        ):
-            tax_subject_to = tax.tbai_is_subject_to_tax()
-            not_subject_to_cause = (
-                not tax_subject_to and tax.tbai_get_value_causa(self) or ""
-            )
-            is_exempted = tax_subject_to and tax.tbai_is_tax_exempted() or False
-            not_exempted_type = (
-                tax_subject_to
-                and not is_exempted
-                and tax.tbai_get_value_tipo_no_exenta()
-                or ""
-            )
-            exemption = ""
-            if tax.tbai_is_tax_exempted():
-                if self.fiscal_position_id:
-                    exemption = self.fiscal_position_id.tbai_vat_exemption_ids.filtered(
-                        lambda e: e.tax_id.id == tax["id"]
-                    )
-                    if len(exemption) == 1:
-                        exemption = exemption.tbai_vat_exemption_key.code
-                else:
-                    exemption = self.env["tbai.vat.exemption.key"].search(
-                        [("code", "=", "E1")], limit=1
-                    )
-                    exemption = exemption.code
-            taxes.append(
-                (
-                    0,
-                    0,
-                    {
-                        "base": tax.tbai_get_value_base_imponible(self),
-                        "is_subject_to": tax_subject_to,
-                        "not_subject_to_cause": not_subject_to_cause,
-                        "is_exempted": is_exempted,
-                        "exempted_cause": is_exempted and exemption or "",
-                        "not_exempted_type": not_exempted_type,
-                        "amount": "%.2f" % abs(tax.amount),
-                        "amount_total": tax.tbai_get_value_cuota_impuesto(self),
-                        "re_amount": tax.tbai_get_value_tipo_recargo_equiv(self) or "",
-                        "re_amount_total": (
-                            tax.tbai_get_value_cuota_recargo_equiv(self) or ""
-                        ),
-                        "surcharge_or_simplified_regime": (
-                            tax.tbai_get_value_op_recargo_equiv_o_reg_simpl(self)
-                        ),
-                        "type": tax.tbai_get_value_tax_type(),
-                    },
-                )
-            )
-        vals["tbai_tax_ids"] = taxes
-        return vals
-
-    def _tbai_build_invoice(self):
-        for record in self:
-            vals = record.tbai_prepare_invoice_values()
-            tbai_invoice = record.env["tbai.invoice"].create(vals)
-            tbai_invoice.build_tbai_invoice()
-            record.tbai_invoice_id = tbai_invoice.id
-
     def tbai_prepare_cancellation_values(self):
-        self.ensure_one()
-        vals = {
-            "invoice_id": self.id,
-            "schema": "AnulaTicketBai",
-            "name": "{} - {}".format(_("Cancellation"), self.name),
-            "company_id": self.company_id.id,
-            "number_prefix": self.tbai_get_value_serie_factura(),
-            "number": self.tbai_get_value_num_factura(),
-            "expedition_date": self.tbai_get_value_fecha_exp_factura(),
-        }
+        vals = super().tbai_prepare_cancellation_values()
+        vals.update(
+            {
+                "invoice_id": self.id,
+            }
+        )
         return vals
-
-    def _tbai_invoice_cancel(self):
-        for record in self:
-            vals = record.tbai_prepare_cancellation_values()
-            tbai_invoice = record.env["tbai.invoice"].create(vals)
-            tbai_invoice.build_tbai_invoice()
-            record.tbai_invoice_id = tbai_invoice.id
 
     def button_cancel(self):
         if self.company_id.tbai_enabled:
@@ -541,11 +262,107 @@ facturación.\nThe limit invoice date taking into account the operation date \
         tbai_invoices._tbai_build_invoice()
         return res
 
-    def _get_refund_common_fields(self):
-        refund_common_fields = super()._get_refund_common_fields()
-        refund_common_fields.append("tbai_substitution_invoice_id")
-        refund_common_fields.append("company_id")
-        return refund_common_fields
+    def tbai_prepare_invoice_values(self):
+        vals = super().tbai_prepare_invoice_values()
+        vals.update(
+            {
+                "invoice_id": self.id,
+                "amount_total": "%.2f" % self.amount_total_signed,
+                "name": self._get_move_display_name(),
+            }
+        )
+        return vals
+
+    def tbai_prepare_invoice_lines_values(self):
+        self.ensure_one()
+        lines = []
+        for line in self.invoice_line_ids.filtered(
+            lambda l: l.display_type not in ["line_note", "line_section"]
+        ):
+            description_line = line.name[:250] if line.name else ""
+            if (
+                self.company_id.tbai_protected_data
+                and self.company_id.tbai_protected_data_txt
+            ):
+                description_line = self.company_id.tbai_protected_data_txt[:250]
+            price_unit = line.tbai_get_price_unit()
+            lines.append(
+                (
+                    0,
+                    0,
+                    {
+                        "description": description_line,
+                        "quantity": line.tbai_get_value_cantidad(),
+                        "price_unit": "%.8f" % price_unit,
+                        "discount_amount": line.tbai_get_value_descuento(price_unit),
+                        "amount_total": line.tbai_get_value_importe_total(),
+                    },
+                )
+            )
+        return lines
+
+    def tbai_prepare_invoice_tax_values(self):
+        self.ensure_one()
+        taxes = []
+        # Discard RecargoEquivalencia and IRPF Taxes
+        tbai_maps = self.env["tbai.tax.map"].search([("code", "in", ("RE", "IRPF"))])
+        exclude_taxes = self.company_id.get_taxes_from_templates(
+            tbai_maps.mapped("tax_template_ids")
+        )
+        for tax in (
+            self.invoice_line_ids.filtered(lambda x: x.tax_ids)
+            .mapped("tax_ids")
+            .filtered(lambda t: t not in exclude_taxes)
+        ):
+            tax_subject_to = tax.tbai_is_subject_to_tax()
+            not_subject_to_cause = (
+                not tax_subject_to and tax.tbai_get_value_causa(self) or ""
+            )
+            is_exempted = tax_subject_to and tax.tbai_is_tax_exempted() or False
+            not_exempted_type = (
+                tax_subject_to
+                and not is_exempted
+                and tax.tbai_get_value_tipo_no_exenta()
+                or ""
+            )
+            exemption = ""
+            if tax.tbai_is_tax_exempted():
+                if self.fiscal_position_id:
+                    exemption = self.fiscal_position_id.tbai_vat_exemption_ids.filtered(
+                        lambda e: e.tax_id.id == tax["id"]
+                    )
+                    if len(exemption) == 1:
+                        exemption = exemption.tbai_vat_exemption_key.code
+                else:
+                    exemption = self.env["tbai.vat.exemption.key"].search(
+                        [("code", "=", "E1")], limit=1
+                    )
+                    exemption = exemption.code
+            taxes.append(
+                (
+                    0,
+                    0,
+                    {
+                        "base": tax.tbai_get_value_base_imponible(self),
+                        "is_subject_to": tax_subject_to,
+                        "not_subject_to_cause": not_subject_to_cause,
+                        "is_exempted": is_exempted,
+                        "exempted_cause": is_exempted and exemption or "",
+                        "not_exempted_type": not_exempted_type,
+                        "amount": "%.2f" % abs(tax.amount),
+                        "amount_total": tax.tbai_get_value_cuota_impuesto(self),
+                        "re_amount": tax.tbai_get_value_tipo_recargo_equiv(self) or "",
+                        "re_amount_total": (
+                            tax.tbai_get_value_cuota_recargo_equiv(self) or ""
+                        ),
+                        "surcharge_or_simplified_regime": (
+                            tax.tbai_get_value_op_recargo_equiv_o_reg_simpl(self)
+                        ),
+                        "type": tax.tbai_get_value_tax_type(),
+                    },
+                )
+            )
+        return taxes
 
     def tbai_is_invoice_refund(self):
         if "out_refund" == self.move_type or (
@@ -595,13 +412,6 @@ facturación.\nThe limit invoice date taking into account the operation date \
             res = "N"
         return res
 
-    def tbai_get_value_factura_emitida_sustitucion_simplificada(self):
-        if self.tbai_substitute_simplified_invoice:
-            res = "S"
-        else:
-            res = "N"
-        return res
-
     def tbai_get_value_base_rectificada(self):
         return "%.2f" % abs(self.amount_untaxed_signed)
 
@@ -637,12 +447,7 @@ facturación.\nThe limit invoice date taking into account the operation date \
 
     def copy_data(self, default=None):
         res = super().copy_data(default=default)
-
-        res[0].update(
-            {"tbai_substitution_invoice_id": self.tbai_substitution_invoice_id.id}
-        )
         res[0].update({"company_id": self.company_id.id})
-
         return res
 
     @api.depends(
@@ -673,7 +478,8 @@ facturación.\nThe limit invoice date taking into account the operation date \
 
 
 class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
+    _name = "account.move.line"
+    _inherit = ["account.move.line", "tbai.mixin.line"]
 
     def tbai_get_value_cantidad(self):
         if self.move_id.tbai_refund_type == "I":
