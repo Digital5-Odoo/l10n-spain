@@ -506,13 +506,6 @@ msgstr ""
 "inkoherentean, mesedez konpondu aldez aurretik."
 
 #. module: l10n_es_ticketbai
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_bank_statement_line__tbai_substitute_simplified_invoice
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_move__tbai_substitute_simplified_invoice
-#: model:ir.model.fields,field_description:l10n_es_ticketbai.field_account_payment__tbai_substitute_simplified_invoice
-msgid "Substitute Simplified Invoice"
-msgstr "Ordezko Faktura Sinplifikatua"
-
-#. module: l10n_es_ticketbai
 #: model:ir.model.fields,field_description:l10n_es_ticketbai.field_res_company__tbai_protected_data_txt
 msgid "Substitution Text"
 msgstr "Ordezko Textua"
