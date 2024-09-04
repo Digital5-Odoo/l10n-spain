@@ -7,7 +7,7 @@ from odoo import _, api, exceptions, fields, models
 class TicketBAIInvoice(models.Model):
     _inherit = "tbai.invoice"
 
-    invoice_id = fields.Many2one(comodel_name="account.move")
+    invoice_id = fields.Many2one(comodel_name="account.move", ondelete="restrict")
 
     def get_ticketbai_api(self, **kwargs):
         self.ensure_one()
