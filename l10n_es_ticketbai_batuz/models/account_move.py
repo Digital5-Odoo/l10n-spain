@@ -7,6 +7,7 @@ import json
 from collections import OrderedDict
 
 from odoo import _, api, exceptions, fields, models
+from odoo.exceptions import UserError
 
 LROE_STATES = [
     ("not_sent", "Not recorded"),
@@ -96,6 +97,11 @@ class AccountMove(models.Model):
         copy=False,
         readonly=True,
     )
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_lroe_operation_ids(self):
+        if self.lroe_operation_ids:
+            raise UserError(_("You can't delete an invoice with LROE operations."))
 
     @api.depends(
         "tbai_invoice_ids",
