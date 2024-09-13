@@ -6,6 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-13 10:15+0000\n"
+"PO-Revision-Date: 2024-09-13 10:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -56,6 +58,7 @@ msgstr ""
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid "Chapter and type are required for search a pending LROE Operation"
 msgstr ""
@@ -65,14 +68,6 @@ msgstr ""
 msgid ""
 "Check it to use connector instead of sending the invoice directly when it's "
 "validated"
-msgstr ""
-
-#. module: l10n_es_ticketbai_batuz
-#: model:ir.model.fields,help:l10n_es_ticketbai_batuz.field_res_partner__lroe_simplified_invoice
-#: model:ir.model.fields,help:l10n_es_ticketbai_batuz.field_res_users__lroe_simplified_invoice
-msgid ""
-"Checking this mark, invoices done to this partner will be sent to LROE as "
-"simplified invoices."
 msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
@@ -88,11 +83,6 @@ msgstr ""
 #. module: l10n_es_ticketbai_batuz
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_batuz.view_company_form_inherit_batuz
 msgid "Connector config"
-msgstr ""
-
-#. module: l10n_es_ticketbai_batuz
-#: model:ir.model,name:l10n_es_ticketbai_batuz.model_res_partner
-msgid "Contact"
 msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
@@ -162,6 +152,7 @@ msgstr ""
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid ""
 "LROE Build: method for model %(model)s chapter %(chapter)s not implemented!"
@@ -169,6 +160,7 @@ msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid "LROE Build: operation type is necessary!"
@@ -181,6 +173,7 @@ msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
+#: code:addons/l10n_es_ticketbai_batuz/models/lroe_operation.py:0
 #: code:addons/l10n_es_ticketbai_batuz/models/lroe_operation.py:0
 #, python-format
 msgid "LROE Operation %s: XML schema not supported!"
@@ -335,12 +328,6 @@ msgid "Sent Time"
 msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_res_partner__lroe_simplified_invoice
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_res_users__lroe_simplified_invoice
-msgid "Simplified invoices in LROE?"
-msgstr ""
-
-#. module: l10n_es_ticketbai_batuz
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_account_move_reversal__batuz_supplier_invoice_number
 msgid "Supplier Invoice Number"
 msgstr ""
@@ -362,6 +349,7 @@ msgstr ""
 
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid "There's a mismatch in taxes for RE. Check them."
@@ -441,6 +429,7 @@ msgstr ""
 #. module: l10n_es_ticketbai_batuz
 #. odoo-python
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid ""
 "You can not communicate this invoice at this moment because there is a job "
@@ -451,6 +440,15 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
 msgid "You can not set to draft this invoice because there is a job running!"
+msgstr ""
+
+#. module: l10n_es_ticketbai_batuz
+#. odoo-python
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
+#, python-format
+msgid "You can't delete an invoice with LROE operations."
 msgstr ""
