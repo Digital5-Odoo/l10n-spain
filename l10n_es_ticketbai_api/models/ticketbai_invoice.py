@@ -110,10 +110,9 @@ class TicketBAIInvoice(models.Model):
     tbai_invoice_refund_ids = fields.One2many(
         string='Refunded Invoices', copy=True,
         comodel_name='tbai.invoice.refund', inverse_name='tbai_invoice_id')
-    qr_url = fields.Char('URL', compute='_compute_tbai_qr', store=True, copy=False)
+    qr_url = fields.Char('URL', copy=False)
     qr = fields.Binary(
-        string="QR", compute='_compute_tbai_qr', store=True, copy=False,
-        attachment=True)
+        string="QR", copy=False, attachment=True)
     datas = fields.Binary(copy=False, attachment=True)
     datas_fname = fields.Char('File Name', copy=False)
     file_size = fields.Integer('File Size', copy=False)
@@ -389,12 +388,6 @@ class TicketBAIInvoice(models.Model):
                 record.tbai_identifier = tbai_identifier_with_crc
 
     @api.multi
-    @api.depends(
-        'tbai_identifier',
-        'company_id', 'company_id.tbai_tax_agency_id',
-        'company_id.tbai_tax_agency_id.test_qr_base_url',
-        'company_id.tbai_tax_agency_id.qr_base_url'
-    )
     def _compute_tbai_qr(self):
         """ V 1.1
         Código QR TBAI, que consiste en un código con formato QR de tamaño mayor o igual
@@ -428,13 +421,6 @@ class TicketBAIInvoice(models.Model):
                     record.qr = base64.b64encode(temp.getvalue())
 
     @api.multi
-    @api.depends(
-        'company_id', 'company_id.tbai_tax_agency_id',
-        'company_id.tbai_tax_agency_id.rest_url_invoice',
-        'company_id.tbai_tax_agency_id.test_rest_url_invoice',
-        'company_id.tbai_tax_agency_id.rest_url_cancellation',
-        'company_id.tbai_tax_agency_id.test_rest_url_cancellation'
-    )
     def _compute_api_url(self):
         for record in self:
             if record.schema == TicketBaiSchema.TicketBai.value:
@@ -684,6 +670,7 @@ class TicketBAIInvoice(models.Model):
         self.datas_fname = "%s.xsig" % self.name.replace('/', '-')
         self.file_size = len(self.datas)
         self.signature_value = signature_value
+        self._compute_tbai_qr()
         self.mark_as_pending()
         if self.schema == TicketBaiSchema.TicketBai.value:
             self.company_id.tbai_last_invoice_id = self
