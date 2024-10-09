@@ -53,7 +53,7 @@
                 <page name='lroe_result' string="LROE" attrs="{'invisible': [('tbai_enabled', '=', False)]}">
                     <field name="tbai_enabled" invisible="1" />
                     <group name="lroe_refund" string="Refund" attrs="{'invisible': [('type', '!=', 'in_refund')]}">
-                        <field name="refund_invoice_id" attrs="{'required': [('type', '=', 'in_refund')]}" />
+                        <field name="refund_invoice_id" attrs="{'required': [('type', '=', 'in_refund'), ('tbai_enabled', '=', True)]}" />
                     </group>
                     <group>
                         <group name="tbai_vat_purchase_regimes" string="VAT Regimes">
