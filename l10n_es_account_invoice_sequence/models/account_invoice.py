@@ -36,8 +36,8 @@ class AccountInvoice(models.Model):
                     sequence = inv.journal_id.refund_inv_sequence_id
                 if sequence:
                     sequence = sequence.with_context(
-                        ir_sequence_date=inv.date or inv.date_invoice,
-                        ir_sequence_date_range=inv.date or inv.date_invoice,
+                        ir_sequence_date=inv.date_invoice or inv.date,
+                        ir_sequence_date_range=inv.date_invoice or inv.date,
                     )
                     number = sequence.next_by_id()
                 else:  # pragma: no cover
