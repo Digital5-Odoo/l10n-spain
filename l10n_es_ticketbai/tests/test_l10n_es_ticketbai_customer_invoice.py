@@ -61,6 +61,7 @@ class TestL10nEsTicketBAICustomerInvoice(TestL10nEsTicketBAI):
     def test_invoice_out_of_term(self):
         invoice = self.create_draft_invoice(
             self.account_billing.id, self.fiscal_position_national)
+        invoice.date = date(2021, 12, 31)
         invoice.date_invoice = date(2021, 12, 31)
         invoice.onchange_fiscal_position_id_tbai_vat_regime_key()
         invoice.compute_taxes()
@@ -545,3 +546,9 @@ class TestL10nEsTicketBAICustomerInvoice(TestL10nEsTicketBAI):
             self.assertEqual(
                 invoice_line_description.text,
                 self.main_company.tbai_protected_data_txt)
+
+    def test_invoice_out_check_dates(self):
+        invoice = self.create_draft_invoice(
+            self.account_billing.id, self.fiscal_position_national)
+        with self.assertRaises(exceptions.ValidationError):
+            invoice.date = date.today() + timedelta(days=45)
