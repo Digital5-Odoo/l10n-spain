@@ -753,7 +753,7 @@ class AccountMove(models.Model):
                     in (RefundType.differences.value, RefundType.substitution.value)
                 )
             )
-            and x.invoice_date >= x.journal_id.tbai_active_date
+            and x.date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
             if lroe_invoice.lroe_state in (
@@ -814,7 +814,7 @@ class AccountMove(models.Model):
                     in (RefundType.differences.value, RefundType.substitution.value)
                 )
             )
-            and x.invoice_date >= x.journal_id.tbai_active_date
+            and x.date >= x.journal_id.tbai_active_date
         )
         for invoice in lroe_invoices:
             if invoice.lroe_state == "recorded":
@@ -850,7 +850,7 @@ class AccountMove(models.Model):
                     in (RefundType.differences.value, RefundType.substitution.value)
                 )
             )
-            and x.invoice_date >= x.journal_id.tbai_active_date
+            and x.date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
             if lroe_invoice.lroe_state in (
