@@ -10,8 +10,6 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     tbai_enabled = fields.Boolean("Enable TicketBAI", copy=False)
-    tbai_test_available = fields.Boolean("Are Tests URLs Available", copy=False)
-    tbai_pro_available = fields.Boolean("Are Production URLs Available", copy=False)
     tbai_test_enabled = fields.Boolean("Enable testing", copy=False)
     tbai_certificate_id = fields.Many2one(
         comodel_name="tbai.certificate",
@@ -44,9 +42,6 @@ class ResCompany(models.Model):
     tbai_device_serial_number = fields.Char(
         "Device Serial Number", default="", copy=False
     )
-    tbai_tax_agency_id = fields.Many2one(
-        comodel_name="tbai.tax.agency", string="TBAI Tax Agency", copy=False
-    )
     tbai_vat_regime_simplified = fields.Boolean("Regime Simplified", copy=False)
     tbai_last_invoice_id = fields.Many2one(
         string="Last TicketBAI Invoice sent", comodel_name="tbai.invoice", copy=False
@@ -76,27 +71,6 @@ class ResCompany(models.Model):
                     % record.name
                 )
 
-    @api.onchange("tbai_tax_agency_id")
-    def onchange_tbai_tax_agency(self):
-        if not (
-            self.tbai_tax_agency_id.test_qr_base_url
-            and self.tbai_tax_agency_id.test_rest_url_invoice
-            and self.tbai_tax_agency_id.test_rest_url_cancellation
-        ):
-            self.tbai_test_available = False
-            self.tbai_test_enabled = False
-        else:
-            self.tbai_test_available = True
-        if not (
-            self.tbai_tax_agency_id.qr_base_url
-            and self.tbai_tax_agency_id.rest_url_invoice
-            and self.tbai_tax_agency_id.rest_url_cancellation
-        ):
-            self.tbai_pro_available = False
-            self.tbai_test_enabled = True
-        else:
-            self.tbai_pro_available = True
-
     @api.onchange("tbai_enabled")
     def onchange_tbai_enabled(self):
         if not self.tbai_enabled:
@@ -105,16 +79,15 @@ class ResCompany(models.Model):
             self.tbai_developer_id = False
             self.tbai_software_name = ""
             self.tbai_device_serial_number = ""
-            self.tbai_tax_agency_id = False
             self.tbai_vat_regime_simplified = False
             self.tbai_certificate_id = False
 
-    @api.constrains("tbai_tax_agency_id")
-    def _check_tbai_tax_agency_id(self):
+    @api.constrains("tax_agency_id")
+    def _check_tax_agency_id(self):
         for record in self:
-            if record.tbai_enabled and not record.tbai_tax_agency_id:
+            if record.tbai_enabled and not record.tax_agency_id:
                 raise exceptions.ValidationError(
-                    _("Company %s TicketBAI Tax Agency is required.") % record.name
+                    _("Company %s Tax Agency is required.") % record.name
                 )
 
             tbai_invoices = record.env["tbai.invoice"].search(

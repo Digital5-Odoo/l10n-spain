@@ -42,20 +42,22 @@
         <field name="model">account.fiscal.position.template</field>
         <field name="inherit_id" ref="account.view_account_position_template_form" />
         <field name="arch" type="xml">
-            <field name="tbai_vat_regime_key3" position="after">
-                <field
-                    name="tbai_vat_regime_purchase_key"
-                    options="{'no_open':True,'no_create':True}"
-                />
-                <field
-                    name="tbai_vat_regime_purchase_key2"
-                    options="{'no_open':True,'no_create':True}"
-                />
-                <field
-                    name="tbai_vat_regime_purchase_key3"
-                    options="{'no_open':True,'no_create':True}"
-                />
-            </field>
+            <group name="tbai_vat_regimes" position="inside">
+                <group name="tbai_vat_regimes_purchase">
+                    <field
+                        name="tbai_vat_regime_purchase_key"
+                        options="{'no_open':True,'no_create':True}"
+                    />
+                    <field
+                        name="tbai_vat_regime_purchase_key2"
+                        options="{'no_open':True,'no_create':True}"
+                    />
+                    <field
+                        name="tbai_vat_regime_purchase_key3"
+                        options="{'no_open':True,'no_create':True}"
+                    />
+                </group>
+            </group>
         </field>
     </record>
 

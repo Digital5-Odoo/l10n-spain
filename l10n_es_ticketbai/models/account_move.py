@@ -2,104 +2,20 @@
 # Copyright 2021 Landoo Sistemas de Informacion SL
 # Copyright 2021 Digital5, S.L.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from odoo import _, api, exceptions, fields, models
+from dateutil.relativedelta import relativedelta
 
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import (
-    RefundCode,
-    RefundType,
-    SiNoType,
-    TicketBaiInvoiceState,
-)
-from odoo.addons.l10n_es_ticketbai_api.ticketbai.xml_schema import TicketBaiSchema
+from odoo import _, api, exceptions, fields, models
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _name = "account.move"
+    _inherit = ["account.move", "tbai.mixin"]
 
-    def _default_tbai_vat_regime_key(self):
-        context = self.env.context
-        invoice_type = context.get("move_type", context.get("default_move_type"))
-        if invoice_type in ["out_invoice", "out_refund"]:
-            key = self.env["tbai.vat.regime.key"].search([("code", "=", "01")], limit=1)
-            return key
-
-    tbai_enabled = fields.Boolean(related="company_id.tbai_enabled", readonly=True)
     tbai_send_invoice = fields.Boolean(related="journal_id.tbai_send_invoice")
-    tbai_substitution_invoice_id = fields.Many2one(
-        comodel_name="account.move",
-        copy=False,
-        help="Link between a validated Customer Invoice and its substitute.",
-    )
-    tbai_invoice_id = fields.Many2one(
-        comodel_name="tbai.invoice", string="TicketBAI Invoice", copy=False
-    )
     tbai_invoice_ids = fields.One2many(
         comodel_name="tbai.invoice",
         inverse_name="invoice_id",
         string="TicketBAI Invoices",
-    )
-    tbai_cancellation_id = fields.Many2one(
-        comodel_name="tbai.invoice", string="TicketBAI Cancellation", copy=False
-    )
-    tbai_cancellation_ids = fields.One2many(
-        comodel_name="tbai.invoice",
-        inverse_name="cancelled_invoice_id",
-        string="TicketBAI Cancellations",
-    )
-    tbai_response_ids = fields.Many2many(
-        comodel_name="tbai.response",
-        compute="_compute_tbai_response_ids",
-        string="Responses",
-    )
-    tbai_datetime_invoice = fields.Datetime(
-        compute="_compute_tbai_datetime_invoice", store=True, copy=False
-    )
-    tbai_date_operation = fields.Datetime("Operation Date", copy=False)
-    tbai_description_operation = fields.Text(
-        "Operation Description",
-        default="/",
-        copy=False,
-        compute="_compute_tbai_description",
-        store=True,
-    )
-    tbai_substitute_simplified_invoice = fields.Boolean(
-        "Substitute Simplified Invoice", copy=False
-    )
-    tbai_refund_key = fields.Selection(
-        selection=[
-            (RefundCode.R1.value, "Art. 80.1, 80.2, 80.6 and rights founded error"),
-            (RefundCode.R2.value, "Art. 80.3"),
-            (RefundCode.R3.value, "Art. 80.4"),
-            (RefundCode.R4.value, "Art. 80 - other"),
-            (RefundCode.R5.value, "Simplified Invoice"),
-        ],
-        help="BOE-A-1992-28740. Ley 37/1992, de 28 de diciembre, del Impuesto sobre el "
-        "Valor Añadido. Artículo 80. Modificación de la base imponible.",
-        copy=False,
-    )
-    tbai_refund_type = fields.Selection(
-        selection=[
-            # (RefundType.substitution.value, 'By substitution'), TODO: Remove from code
-            (RefundType.differences.value, "By differences")
-        ],
-        copy=False,
-    )
-    tbai_vat_regime_key = fields.Many2one(
-        comodel_name="tbai.vat.regime.key",
-        string="VAT Regime Key",
-        copy=True,
-        default=_default_tbai_vat_regime_key,
-    )
-    tbai_vat_regime_key2 = fields.Many2one(
-        comodel_name="tbai.vat.regime.key", string="VAT Regime 2nd Key", copy=True
-    )
-    tbai_vat_regime_key3 = fields.Many2one(
-        comodel_name="tbai.vat.regime.key", string="VAT Regime 3rd Key", copy=True
-    )
-    tbai_refund_origin_ids = fields.One2many(
-        comodel_name="tbai.invoice.refund.origin",
-        inverse_name="account_refund_invoice_id",
-        string="TicketBAI Refund Origin References",
     )
 
     @api.constrains("state")
@@ -114,6 +30,68 @@ class AccountMove(models.Model):
                 raise exceptions.ValidationError(
                     _("You cannot change to draft a TicketBAI invoice!")
                 )
+
+    @api.constrains("date", "invoice_date")
+    def _check_dates(self):
+        """
+        Segun DECRETO FORAL de la Diputación Foral de Bizkaia 4/2013, de 22 de enero,
+          por el que se aprueba el Reglamento por el que se regulan las obligaciones
+          de facturación (BOB 29 Enero): comprobamos el Artículo 11. Plazo para la
+          expedición de las facturas:
+        1. Las facturas deberán ser expedidas en el momento de realizarse la operación.
+            No obstante, cuando el destinatario de la operación sea un empresario o
+            profesional que actúe como tal, las facturas deberán expedirse antes del
+            día 16 del mes siguiente a aquél en que se haya producido el devengo del
+            Impuesto correspondiente a la citada operación.
+        2. En las entregas de bienes comprendidas en el artículo 75.Uno.8.º de la Norma
+            Foral del Impuesto sobre el Valor Añadido, las facturas deberán expedirse
+            antes del día 16 del mes siguiente a aquél en que se inicie la expedición
+            o el transporte de los bienes con destino al adquirente.
+        Es igual en todas las diputaciones forales
+        """
+        for record in self:
+            if (
+                record.move_type in ("out_invoice", "out_refund")
+                and record.tbai_enabled
+            ):
+                invoice_date = record.invoice_date or fields.Date.context_today(record)
+                operation_date = (
+                    record.date if record.date else fields.Date.context_today(record)
+                )
+                if operation_date == invoice_date:
+                    continue
+                elif operation_date > invoice_date:
+                    raise exceptions.ValidationError(
+                        _("The operation date cannot be greater than the invoice date.")
+                    )
+                else:
+                    limit_invoice_date = (
+                        operation_date + relativedelta(months=1)
+                    ).replace(day=16)
+                    if invoice_date >= limit_invoice_date:
+                        raise exceptions.ValidationError(
+                            _(
+                                """The invoice date violates Art.11 del Reglamento de \
+facturación.\nThe limit invoice date taking into account the operation date \
+(%(date)s) is %(limit_invoice_date)s""",
+                                date=record.date,
+                                limit_invoice_date=limit_invoice_date,
+                            )
+                        )
+
+    def _get_accounting_date(self, invoice_date, has_tax):
+        """En las facturas que se emiten, la fecha contable es la fecha operación.
+        Odoo de base la iguala a la fecha factura para ventas (o a fecha de bloqueo +1 dia),
+        pero en tbai la fecha factura es el día en que se confirma/emite."""
+        if (
+            self.is_sale_document(include_receipts=True)
+            and self.tbai_enabled
+            and self.tbai_send_invoice
+            and self.invoice_date >= self.journal_id.tbai_active_date
+        ):
+            return self.date or fields.Date.context_today(self)
+        else:
+            return super()._get_accounting_date(invoice_date, has_tax)
 
     @api.model
     def create(self, vals):
@@ -132,23 +110,16 @@ class AccountMove(models.Model):
             if refund_method and invoice_type:
                 if "out_refund" == invoice_type:
                     if not vals.get("tbai_refund_type", False):
-                        vals["tbai_refund_type"] = RefundType.differences.value
+                        vals["tbai_refund_type"] = "I"
                     if not vals.get("tbai_refund_key", False):
                         if vals.get("partner_id", False):
                             partner = self.env["res.partner"].browse(vals["partner_id"])
                             if partner.aeat_anonymous_cash_customer:
-                                vals["tbai_refund_key"] = RefundCode.R5.value
+                                vals["tbai_refund_key"] = "R5"
                             else:
-                                vals["tbai_refund_key"] = RefundCode.R1.value
+                                vals["tbai_refund_key"] = "R1"
                         else:
-                            vals["tbai_refund_key"] = RefundCode.R1.value
-            if vals.get("fiscal_position_id", False):
-                fiscal_position = self.env["account.fiscal.position"].browse(
-                    vals["fiscal_position_id"]
-                )
-                vals["tbai_vat_regime_key"] = fiscal_position.tbai_vat_regime_key.id
-                vals["tbai_vat_regime_key2"] = fiscal_position.tbai_vat_regime_key2.id
-                vals["tbai_vat_regime_key3"] = fiscal_position.tbai_vat_regime_key3.id
+                            vals["tbai_refund_key"] = "R1"
             if "name" in vals and vals["name"]:
                 vals["tbai_description_operation"] = vals["name"]
         return super().create(vals)
@@ -156,13 +127,10 @@ class AccountMove(models.Model):
     @api.depends(
         "tbai_invoice_ids",
         "tbai_invoice_ids.state",
-        "tbai_cancellation_ids",
-        "tbai_cancellation_ids.state",
     )
     def _compute_tbai_response_ids(self):
         for record in self:
             response_ids = record.tbai_invoice_ids.mapped("tbai_response_ids").ids
-            response_ids += record.tbai_cancellation_ids.mapped("tbai_response_ids").ids
             record.tbai_response_ids = [(6, 0, response_ids)]
 
     @api.depends("date", "invoice_date")
@@ -170,162 +138,171 @@ class AccountMove(models.Model):
         for record in self:
             record.tbai_datetime_invoice = fields.Datetime.now()
 
-    @api.onchange("fiscal_position_id", "partner_id")
-    def onchange_fiscal_position_id_tbai_vat_regime_key(self):
-        if self.fiscal_position_id:
-            self.tbai_vat_regime_key = self.fiscal_position_id.tbai_vat_regime_key.id
-            self.tbai_vat_regime_key2 = self.fiscal_position_id.tbai_vat_regime_key2.id
-            self.tbai_vat_regime_key3 = self.fiscal_position_id.tbai_vat_regime_key3.id
-
     @api.onchange("reversed_entry_id")
     def onchange_tbai_reversed_entry_id(self):
         if self.reversed_entry_id:
             if not self.tbai_refund_type:
-                self.tbai_refund_type = RefundType.differences.value
+                self.tbai_refund_type = "I"
             if not self.tbai_refund_key:
                 if not self.partner_id.aeat_anonymous_cash_customer:
-                    self.tbai_refund_key = RefundCode.R1.value
+                    self.tbai_refund_key = "R1"
                 else:
-                    self.tbai_refund_key = RefundCode.R5.value
+                    self.tbai_refund_key = "R5"
 
-    def tbai_prepare_invoice_values(self):
-        def tbai_prepare_refund_values():
-            refunded_inv = self.reversed_entry_id
-            if refunded_inv:
-                vals.update(
-                    {
-                        "is_invoice_refund": True,
-                        "refund_code": self.tbai_refund_key,
-                        "refund_type": self.tbai_refund_type,
-                        "tbai_invoice_refund_ids": [
-                            (
-                                0,
-                                0,
-                                {
-                                    "number_prefix": (
-                                        refunded_inv.tbai_get_value_serie_factura()
-                                    ),
-                                    "number": (
-                                        refunded_inv.tbai_get_value_num_factura()
-                                    ),
-                                    "expedition_date": (
-                                        refunded_inv.tbai_get_value_fecha_exp_factura()
-                                    ),
-                                },
-                            )
-                        ],
-                    }
+    def tbai_prepare_cancellation_values(self):
+        vals = super().tbai_prepare_cancellation_values()
+        vals.update(
+            {
+                "invoice_id": self.id,
+            }
+        )
+        return vals
+
+    def button_cancel(self):
+        if self.company_id.tbai_enabled:
+            for record in self.filtered(
+                lambda m: m.move_type in self.get_invoice_types()
+            ):
+                non_cancelled_refunds = record.reversal_move_id.filtered(
+                    lambda x: "cancel" != x.state
                 )
-            else:
-                if self.tbai_refund_origin_ids:
-                    refund_id_dicts = []
-                    for refund_origin_id in self.tbai_refund_origin_ids:
-                        expedition_date = fields.Date.from_string(
-                            refund_origin_id.expedition_date
-                        ).strftime("%d-%m-%Y")
-                        refund_id_dicts.append(
-                            (
-                                0,
-                                0,
-                                {
-                                    "number_prefix": refund_origin_id.number_prefix,
-                                    "number": refund_origin_id.number,
-                                    "expedition_date": expedition_date,
-                                },
-                            )
+
+                if len(non_cancelled_refunds) > 0:
+                    raise exceptions.ValidationError(
+                        _(
+                            "Refund invoices must be cancelled in order "
+                            "to cancel the original invoice."
                         )
-                    vals.update(
-                        {
-                            "is_invoice_refund": True,
-                            "refund_code": self.tbai_refund_key,
-                            "refund_type": self.tbai_refund_type,
-                            "tbai_invoice_refund_ids": refund_id_dicts,
-                        }
                     )
 
+                tbai_invoices = record.sudo().filtered(
+                    lambda x: x.tbai_enabled
+                    and "posted" == x.state
+                    and x.tbai_invoice_id
+                )
+                tbai_invoices._tbai_invoice_cancel()
+        return super().button_cancel()
+
+    def _set_invoice_date_today(self):
+        # Establecemos la fecha de hoy para las facturas emitidas a las que haya
+        #   que generar fichero tbai, ya sean normales o rectificativas
+        out_invoices = self.sudo().filtered(
+            lambda x: x.tbai_enabled
+            and x.move_type in ("out_invoice", "out_refund")
+            and x.tbai_send_invoice
+            and (x.invoice_date or fields.Date.context_today(x))
+            >= x.journal_id.tbai_active_date
+        )
+        for move in out_invoices:
+            vals = {
+                "invoice_date": fields.Date.context_today(move),
+                "date": move.date,
+            }
+            move.write(vals)
+
+    def _post(self, soft=True):
+        def validate_refund_invoices():
+            for invoice in refund_invoices:
+                valid_refund = True
+                error_refund_msg = None
+                if not invoice.reversed_entry_id and not invoice.tbai_refund_origin_ids:
+                    valid_refund = False
+                    error_refund_msg = _(
+                        "Please, specify data for the original"
+                        " invoices that are going to be refunded"
+                    )
+                if invoice.reversed_entry_id.tbai_invoice_id:
+                    valid_refund = invoice.reversed_entry_id.tbai_invoice_id.state in [
+                        "pending",
+                        "sent",
+                    ]
+                    if not valid_refund:
+                        error_refund_msg = _(
+                            "Some of the original invoices have related tbai invoices "
+                            "in inconsistent state please fix them beforehand."
+                        )
+                    if invoice.reversed_entry_id.tbai_invoice_id.schema != "TicketBai":
+                        valid_refund = False
+                        error_refund_msg = _(
+                            "Some of the original invoices "
+                            "have related tbai cancelled invoices"
+                        )
+                if not valid_refund:
+                    raise exceptions.ValidationError(error_refund_msg)
+
+        self._set_invoice_date_today()
+        res = super()._post(soft)
+        tbai_invoices = self.sudo().env["account.move"]
+        # Segun pregunta nº 238 de batuz.eus: ¿Cuál es el criterio temporal para anotar
+        #   las factura emitidas y recibidas en el LROE?
+        # En cuanto a las facturas emitidas, estas se tendrán que anotar en el LROE
+        #   del año correspondiente a su fecha de expedición.
+        # En cuanto a las facturas recibidas, estas se tendrán que anotar en el LROE
+        #   del año correspondiente a su fecha de recepción, entendida esta fecha como
+        #   aquella a partir de la cual la persona contribuyente está en posesión del
+        #   documento justificativo de su derecho a deducir el IVA soportado
+        #   (artículo 97 de la Norma Foral del IVA).
+        # Por tanto, comparamos con invoice_date y no con date
+        tbai_invoices |= self.sudo().filtered(
+            lambda x: x.tbai_enabled
+            and "out_invoice" == x.move_type
+            and x.tbai_send_invoice
+            and x.invoice_date >= x.journal_id.tbai_active_date
+        )
+        refund_invoices = self.sudo().filtered(
+            lambda x: x.tbai_enabled
+            and "out_refund" == x.move_type
+            and (not x.tbai_refund_type or x.tbai_refund_type == "I")
+            and x.tbai_send_invoice
+            and x.invoice_date >= x.journal_id.tbai_active_date
+        )
+
+        validate_refund_invoices()
+        tbai_invoices |= refund_invoices
+        tbai_invoices._tbai_build_invoice()
+        return res
+
+    def tbai_prepare_invoice_values(self):
+        vals = super().tbai_prepare_invoice_values()
+        vals.update(
+            {
+                "invoice_id": self.id,
+                "amount_total": "%.2f" % self.amount_total_signed,
+                "name": self._get_move_display_name(),
+            }
+        )
+        return vals
+
+    def tbai_prepare_invoice_lines_values(self):
         self.ensure_one()
-        partner = self.partner_id
-        vals = {
-            "invoice_id": self.id,
-            "schema": TicketBaiSchema.TicketBai.value,
-            "name": self._get_move_display_name(),
-            "company_id": self.company_id.id,
-            "number_prefix": self.tbai_get_value_serie_factura(),
-            "number": self.tbai_get_value_num_factura(),
-            "expedition_date": self.tbai_get_value_fecha_exp_factura(),
-            "expedition_hour": self.tbai_get_value_hora_exp_factura(),
-            "simplified_invoice": self.tbai_get_value_simplified_invoice(),
-            "substitutes_simplified_invoice": (
-                self.tbai_get_value_factura_emitida_sustitucion_simplificada()
-            ),
-            "description": self.tbai_description_operation[:250],
-            "amount_total": "%.2f" % self.amount_total_signed,
-            "vat_regime_key": self.tbai_vat_regime_key.code,
-            "vat_regime_key2": self.tbai_vat_regime_key2.code,
-            "vat_regime_key3": self.tbai_vat_regime_key3.code,
-        }
-        if partner and not partner.aeat_anonymous_cash_customer:
-            vals["tbai_customer_ids"] = [
+        lines = []
+        for line in self.invoice_line_ids.filtered(
+            lambda l: l.display_type not in ["line_note", "line_section"]
+        ):
+            description_line = line.name[:250] if line.name else ""
+            if (
+                self.company_id.tbai_protected_data
+                and self.company_id.tbai_protected_data_txt
+            ):
+                description_line = self.company_id.tbai_protected_data_txt[:250]
+            price_unit = line.tbai_get_price_unit()
+            lines.append(
                 (
                     0,
                     0,
                     {
-                        "name": partner.tbai_get_value_apellidos_nombre_razon_social(),
-                        "country_code": partner._parse_aeat_vat_info()[0],
-                        "nif": partner.tbai_get_value_nif(),
-                        "identification_number": (
-                            partner.tbai_partner_identification_number or partner.vat
-                        ),
-                        "idtype": partner.tbai_partner_idtype,
-                        "address": partner.tbai_get_value_direccion(),
-                        "zip": partner.zip,
+                        "description": description_line,
+                        "quantity": line.tbai_get_value_cantidad(),
+                        "price_unit": "%.8f" % price_unit,
+                        "discount_amount": line.tbai_get_value_descuento(price_unit),
+                        "amount_total": line.tbai_get_value_importe_total(),
                     },
                 )
-            ]
-        retencion_soportada = self.tbai_get_value_retencion_soportada()
-        if retencion_soportada:
-            vals["tax_retention_amount_total"] = retencion_soportada
-        if (
-            self.tbai_is_invoice_refund()
-            and RefundType.differences.value == self.tbai_refund_type
-        ):
-            tbai_prepare_refund_values()
-        operation_date = self.tbai_get_value_fecha_operacion()
-        if operation_date:
-            vals["operation_date"] = operation_date
-        gipuzkoa_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
-        )
-        araba_tax_agency = self.env.ref("l10n_es_ticketbai_api.tbai_tax_agency_araba")
-        tax_agency = self.company_id.tbai_tax_agency_id
-        if tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-            lines = []
-            for line in self.invoice_line_ids.filtered(
-                lambda l: l.display_type not in ["line_note", "line_section"]
-            ):
-                description_line = line.name[:250] if line.name else ""
-                if (
-                    self.company_id.tbai_protected_data
-                    and self.company_id.tbai_protected_data_txt
-                ):
-                    description_line = self.company_id.tbai_protected_data_txt[:250]
-                price_unit = line.tbai_get_price_unit()
-                lines.append(
-                    (
-                        0,
-                        0,
-                        {
-                            "description": description_line,
-                            "quantity": line.tbai_get_value_cantidad(),
-                            "price_unit": "%.8f" % price_unit,
-                            "discount_amount": line.tbai_get_value_descuento(
-                                price_unit
-                            ),
-                            "amount_total": line.tbai_get_value_importe_total(),
-                        },
-                    )
-                )
-            vals["tbai_invoice_line_ids"] = lines
+            )
+        return lines
+
+    def tbai_prepare_invoice_tax_values(self):
+        self.ensure_one()
         taxes = []
         # Discard RecargoEquivalencia and IRPF Taxes
         tbai_maps = self.env["tbai.tax.map"].search([("code", "in", ("RE", "IRPF"))])
@@ -385,123 +362,11 @@ class AccountMove(models.Model):
                     },
                 )
             )
-        vals["tbai_tax_ids"] = taxes
-        return vals
-
-    def _tbai_build_invoice(self):
-        for record in self:
-            vals = record.tbai_prepare_invoice_values()
-            tbai_invoice = record.env["tbai.invoice"].create(vals)
-            tbai_invoice.build_tbai_invoice()
-            record.tbai_invoice_id = tbai_invoice.id
-
-    def tbai_prepare_cancellation_values(self):
-        self.ensure_one()
-        vals = {
-            "cancelled_invoice_id": self.id,
-            "schema": TicketBaiSchema.AnulaTicketBai.value,
-            "name": "{} - {}".format(_("Cancellation"), self.name),
-            "company_id": self.company_id.id,
-            "number_prefix": self.tbai_get_value_serie_factura(),
-            "number": self.tbai_get_value_num_factura(),
-            "expedition_date": self.tbai_get_value_fecha_exp_factura(),
-        }
-        return vals
-
-    def _tbai_invoice_cancel(self):
-        for record in self:
-            vals = record.tbai_prepare_cancellation_values()
-            tbai_invoice = record.env["tbai.invoice"].create(vals)
-            tbai_invoice.build_tbai_invoice()
-            record.tbai_cancellation_id = tbai_invoice.id
-
-    def button_cancel(self):
-        if self.company_id.tbai_enabled:
-            for record in self.filtered(
-                lambda m: m.move_type in self.get_invoice_types()
-            ):
-                non_cancelled_refunds = record.reversal_move_id.filtered(
-                    lambda x: "cancel" != x.state
-                )
-
-                if len(non_cancelled_refunds) > 0:
-                    raise exceptions.ValidationError(
-                        _(
-                            "Refund invoices must be cancelled in order "
-                            "to cancel the original invoice."
-                        )
-                    )
-
-                tbai_invoices = record.sudo().filtered(
-                    lambda x: x.tbai_enabled
-                    and "posted" == x.state
-                    and x.tbai_invoice_id
-                )
-                tbai_invoices._tbai_invoice_cancel()
-        return super().button_cancel()
-
-    def _post(self, soft=True):
-        def validate_refund_invoices():
-            for invoice in refund_invoices:
-                valid_refund = True
-                error_refund_msg = None
-                if not invoice.reversed_entry_id and not invoice.tbai_refund_origin_ids:
-                    valid_refund = False
-                    error_refund_msg = _(
-                        "Please, specify data for the original"
-                        " invoices that are going to be refunded"
-                    )
-                if invoice.reversed_entry_id.tbai_invoice_id:
-                    valid_refund = invoice.reversed_entry_id.tbai_invoice_id.state in [
-                        TicketBaiInvoiceState.pending.value,
-                        TicketBaiInvoiceState.sent.value,
-                    ]
-                    if not valid_refund:
-                        error_refund_msg = _(
-                            "Some of the original invoices have related tbai invoices "
-                            "in inconsistent state please fix them beforehand."
-                        )
-                if valid_refund and invoice.reversed_entry_id.tbai_cancellation_id:
-                    valid_refund = False
-                    error_refund_msg = _(
-                        "Some of the original invoices "
-                        "have related tbai cancelled invoices"
-                    )
-                if not valid_refund:
-                    raise exceptions.ValidationError(error_refund_msg)
-
-        res = super()._post(soft)
-        tbai_invoices = self.sudo().env["account.move"]
-        tbai_invoices |= self.sudo().filtered(
-            lambda x: x.tbai_enabled
-            and "out_invoice" == x.move_type
-            and x.tbai_send_invoice
-        )
-        refund_invoices = self.sudo().filtered(
-            lambda x: x.tbai_enabled
-            and "out_refund" == x.move_type
-            and (
-                not x.tbai_refund_type
-                or x.tbai_refund_type == RefundType.differences.value
-            )
-            and x.tbai_send_invoice
-        )
-
-        validate_refund_invoices()
-        tbai_invoices |= refund_invoices
-        tbai_invoices._tbai_build_invoice()
-        return res
-
-    def _get_refund_common_fields(self):
-        refund_common_fields = super()._get_refund_common_fields()
-        refund_common_fields.append("tbai_substitution_invoice_id")
-        refund_common_fields.append("company_id")
-        return refund_common_fields
+        return taxes
 
     def tbai_is_invoice_refund(self):
         if "out_refund" == self.move_type or (
-            "out_invoice" == self.move_type
-            and RefundType.substitution.value == self.tbai_refund_type
+            "out_invoice" == self.move_type and self.tbai_refund_type == "S"
         ):
             res = True
         else:
@@ -527,7 +392,7 @@ class AccountMove(models.Model):
         return num_invoice
 
     def tbai_get_value_fecha_exp_factura(self):
-        invoice_date = self.date or self.invoice_date
+        invoice_date = self.invoice_date
         date = fields.Datetime.context_timestamp(
             self, fields.Datetime.from_string(invoice_date)
         )
@@ -542,16 +407,9 @@ class AccountMove(models.Model):
 
     def tbai_get_value_simplified_invoice(self):
         if self.partner_id.aeat_anonymous_cash_customer:
-            res = SiNoType.S.value
+            res = "S"
         else:
-            res = SiNoType.N.value
-        return res
-
-    def tbai_get_value_factura_emitida_sustitucion_simplificada(self):
-        if self.tbai_substitute_simplified_invoice:
-            res = SiNoType.S.value
-        else:
-            res = SiNoType.N.value
+            res = "N"
         return res
 
     def tbai_get_value_base_rectificada(self):
@@ -562,13 +420,9 @@ class AccountMove(models.Model):
         return "%.2f" % amount
 
     def tbai_get_value_fecha_operacion(self):
-        if self.tbai_date_operation:
-            tbai_date_operation = self.tbai_date_operation.strftime("%d-%m-%Y")
-            date_invoice = (self.date or self.invoice_date).strftime("%d-%m-%Y")
-            if tbai_date_operation == date_invoice:
-                tbai_date_operation = None
-        else:
-            tbai_date_operation = None
+        tbai_date_operation = None
+        if self.date != self.invoice_date:
+            tbai_date_operation = self.date.strftime("%d-%m-%Y")
         return tbai_date_operation
 
     def tbai_get_value_retencion_soportada(self):
@@ -579,7 +433,7 @@ class AccountMove(models.Model):
         taxes = self.mapped("invoice_line_ids.tax_ids") & irpf_taxes
         inv_id = self
         if 0 < len(taxes):
-            if RefundType.differences.value == self.tbai_refund_type:
+            if self.tbai_refund_type == "I":
                 sign = 1
             else:
                 sign = -1
@@ -593,12 +447,7 @@ class AccountMove(models.Model):
 
     def copy_data(self, default=None):
         res = super().copy_data(default=default)
-
-        res[0].update(
-            {"tbai_substitution_invoice_id": self.tbai_substitution_invoice_id.id}
-        )
         res[0].update({"company_id": self.company_id.id})
-
         return res
 
     @api.depends(
@@ -629,10 +478,11 @@ class AccountMove(models.Model):
 
 
 class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
+    _name = "account.move.line"
+    _inherit = ["account.move.line", "tbai.mixin.line"]
 
     def tbai_get_value_cantidad(self):
-        if RefundType.differences.value == self.move_id.tbai_refund_type:
+        if self.move_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
@@ -640,7 +490,7 @@ class AccountMoveLine(models.Model):
 
     def tbai_get_value_descuento(self, price_unit):
         if self.discount:
-            if RefundType.differences.value == self.move_id.tbai_refund_type:
+            if self.move_id.tbai_refund_type == "I":
                 sign = -1
             else:
                 sign = 1
@@ -672,7 +522,7 @@ class AccountMoveLine(models.Model):
                 invoice_id.company_id,
                 invoice_id.date or invoice_id.invoice_date,
             )
-        if RefundType.differences.value == self.move_id.tbai_refund_type:
+        if self.move_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1

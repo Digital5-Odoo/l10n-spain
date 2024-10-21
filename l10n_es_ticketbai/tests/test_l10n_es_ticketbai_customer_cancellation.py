@@ -30,9 +30,14 @@ class TestL10nEsTicketBAICustomerCancellation(TestL10nEsTicketBAI):
         invoice.sudo().tbai_invoice_ids.state = "sent"
         invoice.button_cancel()
         self.assertEqual(invoice.state, "cancel")
-        self.assertEqual(1, len(invoice.tbai_cancellation_ids))
-        invs = invoice.sudo().tbai_cancellation_ids
-        root, signature_value = invs.get_tbai_xml_signed_and_signature_value()
+        tbai_cancel_invs = invoice.sudo().tbai_invoice_ids.filtered(
+            lambda tbai: tbai.schema == "AnulaTicketBai"
+        )
+        self.assertEqual(1, len(tbai_cancel_invs))
+        (
+            root,
+            signature_value,
+        ) = tbai_cancel_invs.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_cancellation_schema_doc, root)
         self.assertTrue(res)
 
@@ -48,4 +53,7 @@ class TestL10nEsTicketBAICustomerCancellation(TestL10nEsTicketBAI):
         self.main_company.tbai_enabled = True
         invoice.button_cancel()
         self.assertEqual(invoice.state, "cancel")
-        self.assertEqual(0, len(invoice.tbai_cancellation_ids))
+        tbai_cancel_invs = invoice.sudo().tbai_invoice_ids.filtered(
+            lambda tbai: tbai.schema == "AnulaTicketBai"
+        )
+        self.assertEqual(0, len(tbai_cancel_invs))
