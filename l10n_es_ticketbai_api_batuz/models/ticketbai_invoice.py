@@ -5,11 +5,7 @@ import logging
 
 from odoo import exceptions, fields, models
 
-from odoo.addons.l10n_es_ticketbai_api.ticketbai.xml_schema import TicketBaiSchema
-
 from ..lroe.lroe_api import LROETicketBaiApi
-from .lroe_operation import LROEModelEnum, LROEOperationEnum, LROEOperationStateEnum
-from .lroe_operation_response import LROEOperationResponseState
 
 _logger = logging.getLogger(__name__)
 
@@ -34,10 +30,10 @@ class TicketBAIInvoice(models.Model):
             return self.company_id
 
         def lroe_operation_type():
-            if self.schema == TicketBaiSchema.TicketBai.value:
-                return LROEOperationEnum.create.value
-            if self.schema == TicketBaiSchema.AnulaTicketBai.value:
-                return LROEOperationEnum.cancel.value
+            if self.schema == "TicketBai":
+                return "A00"
+            if self.schema == "AnulaTicketBai":
+                return "AN0"
 
         def lroe_customer_invoices():
             return [self.id]
@@ -45,7 +41,7 @@ class TicketBAIInvoice(models.Model):
         self.ensure_one()
         lroe_op_db_model = self.env["lroe.operation"]
         company = lroe_operation_company()
-        if company.lroe_model == LROEModelEnum.model_pf_140.value:
+        if company.lroe_model == "140":
             lroe_chapter_id = self.env.ref(
                 "l10n_es_ticketbai_api_batuz.lroe_chapter_pf_140_1"
             )
@@ -72,11 +68,11 @@ class TicketBAIInvoice(models.Model):
         return lroe_operation
 
     def send(self, **kwargs):
-        tbai_tax_agency_id = self.company_id.tbai_tax_agency_id
+        tax_agency_id = self.company_id.tax_agency_id
         if (
-            tbai_tax_agency_id
-            and tbai_tax_agency_id.id
-            == self.env.ref("l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia").id
+            tax_agency_id
+            and tax_agency_id.id
+            == self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia").id
         ):
             return self.send_lroe_ticketbai(**kwargs)
         else:
@@ -110,21 +106,15 @@ class TicketBAIInvoice(models.Model):
             if lroe_response_obj:
                 operation_state = None
                 if (
-                    lroe_response_obj.state
-                    == LROEOperationResponseState.BUILD_ERROR.value
-                    or lroe_response_obj.state
-                    == LROEOperationResponseState.REQUEST_ERROR.value
-                    or lroe_response_obj.state
-                    == LROEOperationResponseState.INCORRECT.value
+                    lroe_response_obj.state == "ErrorConstruccion"
+                    or lroe_response_obj.state == "ErrorSolicitud"
+                    or lroe_response_obj.state == "Incorrecto"
                 ):
-                    operation_state = LROEOperationStateEnum.ERROR.value
-                if lroe_response_obj.state == LROEOperationResponseState.CORRECT.value:
-                    operation_state = LROEOperationStateEnum.RECORDED.value
-                if (
-                    lroe_response_obj.state
-                    == LROEOperationResponseState.PARTIALLY_CORRECT.value
-                ):
-                    operation_state = LROEOperationStateEnum.RECORDED_WARNING.value
+                    operation_state = "error"
+                if lroe_response_obj.state == "Correcto":
+                    operation_state = "recorded"
+                if lroe_response_obj.state == "ParcialmenteCorrecto":
+                    operation_state = "recorded_warning"
                 if lroe_operation and operation_state:
                     lroe_operation.state = operation_state
                 return lroe_response_obj.response_line_ids.tbai_response_id

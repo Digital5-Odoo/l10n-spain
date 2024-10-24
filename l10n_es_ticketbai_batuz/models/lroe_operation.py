@@ -10,13 +10,6 @@ from odoo.addons.l10n_es_ticketbai_api_batuz.lroe.lroe_api import LROETicketBaiA
 from odoo.addons.l10n_es_ticketbai_api_batuz.lroe.lroe_xml_schema import (
     LROEXMLSchemaModeNotSupported,
 )
-from odoo.addons.l10n_es_ticketbai_api_batuz.models.lroe_operation import (
-    LROEOperationEnum,
-    LROEOperationStateEnum,
-)
-from odoo.addons.l10n_es_ticketbai_api_batuz.models.lroe_operation_response import (
-    LROEOperationResponseState,
-)
 
 _logger = logging.getLogger(__name__)
 
@@ -91,13 +84,13 @@ class LROEOperation(models.Model):
 
     def send_one_operation(self):
         lroe_response = self.send()
-        if lroe_response.state == LROEOperationResponseState.CORRECT.value:
+        if lroe_response.state == "Correcto":
             self.mark_as_recorded()
-        elif lroe_response.state == LROEOperationResponseState.PARTIALLY_CORRECT.value:
+        elif lroe_response.state == "ParcialmenteCorrecto":
             self.mark_as_warning()
         elif lroe_response.state in (
-            LROEOperationResponseState.BUILD_ERROR.value,
-            LROEOperationResponseState.INCORRECT.value,
+            "ErrorConstruccion",
+            "Incorrecto",
         ):
             self.mark_as_error()
 
@@ -112,25 +105,20 @@ class LROEOperation(models.Model):
         if not company.use_connector:
             try:
                 lroe_response = self.send()
-                if lroe_response.state == LROEOperationResponseState.CORRECT.value:
+                if lroe_response.state == "Correcto":
                     self.mark_as_recorded()
-                elif (
-                    lroe_response.state
-                    == LROEOperationResponseState.PARTIALLY_CORRECT.value
-                ):
+                elif lroe_response.state == "ParcialmenteCorrecto":
                     self.mark_as_warning()
                 elif lroe_response.state in (
-                    LROEOperationResponseState.BUILD_ERROR.value,
-                    LROEOperationResponseState.INCORRECT.value,
+                    "ErrorConstruccion",
+                    "Incorrecto",
                 ):
                     self.mark_as_error()
             except Exception:
                 new_cr = Registry(self.env.cr.dbname).cursor()
                 env = api.Environment(new_cr, self.env.uid, self.env.context)
                 lroe_operation = env["lroe.operation"].browse(self.id)
-                lroe_operation.sudo().write(
-                    {"state": LROEOperationStateEnum.ERROR.value}
-                )
+                lroe_operation.sudo().write({"state": "error"})
                 # If an operation has been sent successfully to the Tax Agency we need
                 # to make sure that the current state is saved in case an exception
                 # occurs in the following invoices.
@@ -157,7 +145,7 @@ class LROEOperation(models.Model):
         column2="invoice_id",
         string="Invoices",
     )
-    api_url = fields.Char("LROE API URL", compute="_compute_api_url")
+    api_url = fields.Char(string="LROE API URL")
     jobs_ids = fields.Many2many(
         comodel_name="queue.job",
         column1="lroe_operation_id",
@@ -166,33 +154,25 @@ class LROEOperation(models.Model):
         copy=False,
     )
 
-    @api.depends(
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.rest_url_invoice",
-        "company_id.tbai_tax_agency_id.test_rest_url_invoice",
-        "company_id.tbai_tax_agency_id.rest_url_cancellation",
-        "company_id.tbai_tax_agency_id.test_rest_url_cancellation",
-    )
     def _compute_api_url(self):
         for record in self:
             # Alta, modificación
             if record.type in (
-                LROEOperationEnum.create.value,
-                LROEOperationEnum.update.value,
+                "A00",
+                "M00",
             ):
                 if record.company_id.tbai_test_enabled:
-                    url = record.company_id.tbai_tax_agency_id.test_rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_test_rest_url_invoice
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_rest_url_invoice
             # anulación
-            elif record.type == LROEOperationEnum.cancel.value:
+            elif record.type == "AN0":
                 if record.company_id.tbai_test_enabled:
                     url = (
-                        record.company_id.tbai_tax_agency_id.test_rest_url_cancellation
+                        record.company_id.tax_agency_id.tbai_test_rest_url_cancellation
                     )
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_cancellation
+                    url = record.company_id.tax_agency_id.tbai_rest_url_cancellation
             else:
                 raise LROEXMLSchemaModeNotSupported(
                     _("LROE Operation %s: XML schema not supported!") % record.name
@@ -205,17 +185,17 @@ class LROEOperation(models.Model):
                 return False
             elif queue.state in ("pending", "enqueued", "failed"):
                 queue.unlink()
-                self.sudo().write({"state": LROEOperationStateEnum.CANCEL.value})
+                self.sudo().write({"state": "cancel"})
         return True
 
     def mark_as_error(self):
         self.invoice_ids.set_lroe_state_error()
-        self.sudo().write({"state": LROEOperationStateEnum.ERROR.value})
+        self.sudo().write({"state": "error"})
 
     def mark_as_warning(self):
         self.invoice_ids.set_lroe_state_recorded_warning()
-        self.sudo().write({"state": LROEOperationStateEnum.RECORDED_WARNING.value})
+        self.sudo().write({"state": "recorded_warning"})
 
     def mark_as_recorded(self):
         self.invoice_ids.set_lroe_state_recorded()
-        self.sudo().write({"state": LROEOperationStateEnum.RECORDED.value})
+        self.sudo().write({"state": "recorded"})

@@ -14,15 +14,8 @@ from odoo import _, api, exceptions, fields, models
 
 from ..ticketbai.api import TicketBaiApi
 from ..ticketbai.crc8 import crc8
-from ..ticketbai.xml_schema import TicketBaiSchema, XMLSchema, XMLSchemaModeNotSupported
+from ..ticketbai.xml_schema import XMLSchema, XMLSchemaModeNotSupported
 from ..utils import utils as tbai_utils
-from .ticketbai_invoice_customer import TicketBaiCustomerIdType
-from .ticketbai_invoice_tax import TicketBaiTaxType, VATRegimeKey
-from .ticketbai_response import (
-    TicketBaiCancellationResponseCode as CancellationResponseCode,
-    TicketBaiInvoiceResponseCode as InvoiceResponseCode,
-    TicketBaiResponseState as ResponseState,
-)
 
 _logger = logging.getLogger(__name__)
 TBAI_REJECTED_MAX_RETRIES = 5
@@ -31,39 +24,6 @@ try:
     import qrcode
 except (ImportError, IOError) as err:
     _logger.error(err)
-
-
-class TicketBaiQRParams(tbai_utils.EnumValues):
-    tbai_identifier = "id"
-    invoice_number_prefix = "s"
-    invoice_number = "nf"
-    invoice_total_amount = "i"
-
-
-class TicketBaiInvoiceState(tbai_utils.EnumValues):
-    draft = "draft"
-    pending = "pending"
-    sent = "sent"
-    cancel = "cancel"
-    error = "error"
-
-
-class RefundType(tbai_utils.EnumValues):
-    substitution = "S"
-    differences = "I"
-
-
-class RefundCode(tbai_utils.EnumValues):
-    R1 = "R1"
-    R2 = "R2"
-    R3 = "R3"
-    R4 = "R4"
-    R5 = "R5"
-
-
-class SiNoType(tbai_utils.EnumValues):
-    S = "S"
-    N = "N"
 
 
 class TicketBAIInvoice(models.Model):
@@ -90,17 +50,12 @@ class TicketBAIInvoice(models.Model):
         return self.env["tbai.response"].create(values)
 
     name = fields.Char(required=True)
+    partner_id = fields.Many2one(comodel_name="res.partner")
     company_id = fields.Many2one(comodel_name="res.company", required=True)
     previous_tbai_invoice_id = fields.Many2one(comodel_name="tbai.invoice", copy=False)
     signature_value = fields.Char(default="", copy=False)
     tbai_identifier = fields.Char(
         "TBAI Identifier", compute="_compute_tbai_identifier", store=True, copy=False
-    )
-    tbai_customer_ids = fields.One2many(
-        string="TicketBAI Invoice Recipients",
-        copy=True,
-        comodel_name="tbai.invoice.customer",
-        inverse_name="tbai_invoice_id",
     )
     tbai_response_ids = fields.One2many(
         comodel_name="tbai.response", inverse_name="tbai_invoice_id", string="Responses"
@@ -123,31 +78,29 @@ class TicketBAIInvoice(models.Model):
         comodel_name="tbai.invoice.refund",
         inverse_name="tbai_invoice_id",
     )
-    qr_url = fields.Char("URL", compute="_compute_tbai_qr", store=True, copy=False)
-    qr = fields.Binary(
-        string="QR", compute="_compute_tbai_qr", store=True, copy=False, attachment=True
-    )
+    qr_url = fields.Char("URL", copy=False)
+    qr = fields.Binary(string="QR", copy=False, attachment=True)
     datas = fields.Binary(copy=False, attachment=True)
     datas_fname = fields.Char("File Name", copy=False)
     file_size = fields.Integer(copy=False)
     state = fields.Selection(
         string="Status",
         selection=[
-            (TicketBaiInvoiceState.draft.value, "Draft"),
-            (TicketBaiInvoiceState.pending.value, "Pending"),
-            (TicketBaiInvoiceState.sent.value, "Sent"),
-            (TicketBaiInvoiceState.cancel.value, "Cancelled"),
-            (TicketBaiInvoiceState.error.value, "Error"),
+            ("draft", "Draft"),
+            ("pending", "Pending"),
+            ("sent", "Sent"),
+            ("cancel", "Cancelled"),
+            ("error", "Error"),
         ],
-        default=TicketBaiInvoiceState.draft.value,
+        default="draft",
         required=True,
         index=True,
         copy=False,
     )
     schema = fields.Selection(
         selection=[
-            (TicketBaiSchema.TicketBai.value, "TicketBai"),
-            (TicketBaiSchema.AnulaTicketBai.value, "AnulaTicketBai"),
+            ("TicketBai", "TicketBai"),
+            ("AnulaTicketBai", "AnulaTicketBai"),
         ],
         required=True,
         help="""
@@ -184,11 +137,11 @@ class TicketBAIInvoice(models.Model):
     )
     refund_code = fields.Selection(
         selection=[
-            (RefundCode.R1.value, "Art. 80.1, 80.2, 80.6 and rights founded error"),
-            (RefundCode.R2.value, "Art. 80.3"),
-            (RefundCode.R3.value, "Art. 80.4"),
-            (RefundCode.R4.value, "Art. 80 - other"),
-            (RefundCode.R5.value, "Simplified Invoice"),
+            ("R1", "Art. 80.1, 80.2, 80.6 and rights founded error"),
+            ("R2", "Art. 80.3"),
+            ("R3", "Art. 80.4"),
+            ("R4", "Art. 80 - other"),
+            ("R5", "Simplified Invoice"),
         ],
         string="Invoice Refund Reason Code",
         help="BOE-A-1992-28740. Ley 37/1992, de 28 de diciembre, del Impuesto sobre el "
@@ -196,18 +149,18 @@ class TicketBAIInvoice(models.Model):
     )
     refund_type = fields.Selection(
         selection=[
-            (RefundType.substitution.value, "S"),
-            (RefundType.differences.value, "I"),
+            ("S", "S"),
+            ("I", "I"),
         ],
         help="Refund Invoice Type (S/Substitution or I/Differences).",
     )
     description = fields.Char(default="/")
     simplified_invoice = fields.Selection(
-        selection=[(SiNoType.S.value, "S"), (SiNoType.N.value, "N")],
+        selection=[("S", "S"), ("N", "N")],
         help="S/Yes or N/No",
     )
     substitutes_simplified_invoice = fields.Selection(
-        selection=[(SiNoType.S.value, "S"), (SiNoType.N.value, "N")],
+        selection=[("S", "S"), ("N", "N")],
         help="S/Yes or N/No",
     )
     expedition_date = fields.Char(required=True)
@@ -235,8 +188,8 @@ class TicketBAIInvoice(models.Model):
                             "state",
                             "in",
                             [
-                                TicketBaiInvoiceState.pending.value,
-                                TicketBaiInvoiceState.sent.value,
+                                "pending",
+                                "sent",
                             ],
                         ),
                     ]
@@ -253,36 +206,9 @@ class TicketBAIInvoice(models.Model):
     @api.constrains("vat_regime_key")
     def _check_vat_regime_key(self):
         for record in self:
-            if record.schema == TicketBaiSchema.TicketBai.value and (
-                not record.vat_regime_key
-                or record.vat_regime_key not in VATRegimeKey.values()
-            ):
+            if record.schema == "TicketBai" and (not record.vat_regime_key):
                 raise exceptions.ValidationError(
-                    _("TicketBAI Invoice %s: VAT Regime Key not valid.") % record.name
-                )
-
-    @api.constrains("vat_regime_key2")
-    def _check_vat_regime_key2(self):
-        for record in self:
-            if (
-                record.vat_regime_key2
-                and record.vat_regime_key2 not in VATRegimeKey.values()
-            ):
-                raise exceptions.ValidationError(
-                    _("TicketBAI Invoice %s: Second VAT Regime Key not valid.")
-                    % record.name
-                )
-
-    @api.constrains("vat_regime_key3")
-    def _check_vat_regime_key3(self):
-        for record in self:
-            if (
-                record.vat_regime_key3
-                and record.vat_regime_key3 not in VATRegimeKey.values()
-            ):
-                raise exceptions.ValidationError(
-                    _("TicketBAI Invoice %s: Third VAT Regime Key not valid.")
-                    % record.name
+                    _("TicketBAI Invoice %s: VAT Regime Key is required.") % record.name
                 )
 
     @api.constrains("is_invoice_refund")
@@ -301,7 +227,7 @@ class TicketBAIInvoice(models.Model):
         for record in self:
             if (
                 record.is_invoice_refund
-                and record.refund_type == RefundType.substitution.value
+                and record.refund_type == "S"
                 and not record.substituted_invoice_amount_total_untaxed
             ):
                 raise exceptions.ValidationError(
@@ -326,7 +252,7 @@ class TicketBAIInvoice(models.Model):
         for record in self:
             if (
                 record.is_invoice_refund
-                and record.refund_type == RefundType.substitution.value
+                and record.refund_type == "S"
                 and not record.substituted_invoice_total_tax_amount
             ):
                 raise exceptions.ValidationError(
@@ -358,10 +284,7 @@ class TicketBAIInvoice(models.Model):
     @api.constrains("description")
     def _check_description(self):
         for record in self:
-            if (
-                record.schema == TicketBaiSchema.TicketBai.value
-                and not record.description
-            ):
+            if record.schema == "TicketBai" and not record.description:
                 raise exceptions.ValidationError(
                     _("TicketBAI Invoice %s:\n Invoice Description is required.")
                     % record.name
@@ -387,7 +310,7 @@ class TicketBAIInvoice(models.Model):
     @api.constrains("expedition_hour")
     def _check_expedition_hour(self):
         for record in self:
-            if record.schema == TicketBaiSchema.TicketBai.value:
+            if record.schema == "TicketBai":
                 tbai_utils.check_hour(
                     _("TicketBAI Invoice %s: Expedition Hour") % record.name,
                     record.expedition_hour,
@@ -405,7 +328,7 @@ class TicketBAIInvoice(models.Model):
     @api.constrains("amount_total")
     def _check_amount_total(self):
         for record in self:
-            if record.schema == TicketBaiSchema.TicketBai.value:
+            if record.schema == "TicketBai":
                 tbai_utils.check_str_decimal(
                     _("TicketBAI Invoice %s: Amount Total") % record.name,
                     record.amount_total,
@@ -452,8 +375,8 @@ class TicketBAIInvoice(models.Model):
         for record in self.filtered(
             lambda ti: ti.state
             in (
-                TicketBaiInvoiceState.draft.value,
-                TicketBaiInvoiceState.pending.value,
+                "draft",
+                "pending",
             )
         ):
             if record.signature_value:
@@ -492,13 +415,6 @@ class TicketBAIInvoice(models.Model):
                     )
                 record.tbai_identifier = tbai_identifier_with_crc
 
-    @api.depends(
-        "tbai_identifier",
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.test_qr_base_url",
-        "company_id.tbai_tax_agency_id.qr_base_url",
-    )
     def _compute_tbai_qr(self):
         """V 1.1
         Código QR TBAI, que consiste en un código con formato QR de tamaño mayor o igual
@@ -510,15 +426,15 @@ class TicketBAIInvoice(models.Model):
         for record in self.filtered(
             lambda ti: ti.state
             in (
-                TicketBaiInvoiceState.draft.value,
-                TicketBaiInvoiceState.pending.value,
+                "draft",
+                "pending",
             )
         ):
             if record.tbai_identifier:
                 if record.company_id.tbai_test_enabled:
-                    qr_base_url = record.company_id.tbai_tax_agency_id.test_qr_base_url
+                    qr_base_url = record.company_id.tax_agency_id.tbai_test_qr_base_url
                 else:
-                    qr_base_url = record.company_id.tbai_tax_agency_id.qr_base_url
+                    qr_base_url = record.company_id.tax_agency_id.tbai_qr_base_url
                 qr_values = record._get_qr_url_values()
                 qr_url_without_crc = "{}?{}".format(
                     qr_base_url,
@@ -542,34 +458,26 @@ class TicketBAIInvoice(models.Model):
                     img.save(temp, format="PNG")
                     record.qr = base64.b64encode(temp.getvalue())
 
-    @api.depends(
-        "company_id",
-        "company_id.tbai_tax_agency_id",
-        "company_id.tbai_tax_agency_id.rest_url_invoice",
-        "company_id.tbai_tax_agency_id.test_rest_url_invoice",
-        "company_id.tbai_tax_agency_id.rest_url_cancellation",
-        "company_id.tbai_tax_agency_id.test_rest_url_cancellation",
-    )
     def _compute_api_url(self):
         for record in self.filtered(
             lambda ti: ti.state
             in (
-                TicketBaiInvoiceState.draft.value,
-                TicketBaiInvoiceState.pending.value,
+                "draft",
+                "pending",
             )
         ):
-            if record.schema == TicketBaiSchema.TicketBai.value:
+            if record.schema == "TicketBai":
                 if record.company_id.tbai_test_enabled:
-                    url = record.company_id.tbai_tax_agency_id.test_rest_url_invoice
+                    url = record.company_id.tax_agency_id.tbai_test_rest_url_invoice
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_invoice
-            elif record.schema == TicketBaiSchema.AnulaTicketBai.value:
+                    url = record.company_id.tax_agency_id.tbai_rest_url_invoice
+            elif record.schema == "AnulaTicketBai":
                 if record.company_id.tbai_test_enabled:
                     url = (
-                        record.company_id.tbai_tax_agency_id.test_rest_url_cancellation
+                        record.company_id.tax_agency_id.tbai_test_rest_url_cancellation
                     )
                 else:
-                    url = record.company_id.tbai_tax_agency_id.rest_url_cancellation
+                    url = record.company_id.tax_agency_id.tbai_rest_url_cancellation
             else:
                 raise XMLSchemaModeNotSupported(
                     _("TicketBAI Invoice %s: XML Invoice schema not supported!")
@@ -587,22 +495,22 @@ class TicketBAIInvoice(models.Model):
 
     @api.model
     def get_next_pending_invoice(self, company_id=False, limit=1):
-        domain = [("state", "=", TicketBaiInvoiceState.pending.value)]
+        domain = [("state", "=", "pending")]
         if company_id:
             domain.append(("company_id", "=", company_id))
         return self.search(domain, order="id ASC", limit=limit)
 
     def error(self):
-        self.write({"state": TicketBaiInvoiceState.error.value})
+        self.write({"state": "error"})
 
     def cancel(self):
-        self.write({"state": TicketBaiInvoiceState.cancel.value})
+        self.write({"state": "cancel"})
 
     def mark_as_sent(self):
-        self.write({"state": TicketBaiInvoiceState.sent.value})
+        self.write({"state": "sent"})
 
     def mark_as_pending(self):
-        self.write({"state": TicketBaiInvoiceState.pending.value})
+        self.write({"state": "pending"})
 
     def get_exempted_taxes(self):
         """
@@ -651,7 +559,7 @@ class TicketBAIInvoice(models.Model):
     @api.model
     def mark_chain_as_error(self, invoice_to_error):
         # Restore last invoice successfully sent
-        if TicketBaiSchema.TicketBai.value == invoice_to_error.schema:
+        if invoice_to_error.schema == "TicketBai":
             invoice_to_error.company_id.tbai_last_invoice_id = (
                 invoice_to_error.previous_tbai_invoice_id
             )
@@ -674,9 +582,9 @@ class TicketBAIInvoice(models.Model):
             try:
                 with self.env.cr.savepoint():
                     tbai_response = next_pending_invoice.send()
-                    if ResponseState.RECEIVED.value == tbai_response.state:
+                    if tbai_response.state == "00":
                         next_pending_invoice.mark_as_sent()
-                    elif ResponseState.REJECTED.value == tbai_response.state:
+                    elif tbai_response.state == "01":
                         # Reestablish the company pointer to the last invoice built and
                         # successfully sent.
                         # Mark pending invoices as error, except in the following:
@@ -691,48 +599,24 @@ class TicketBAIInvoice(models.Model):
                         response_codes = list(
                             set(tbai_response.tbai_response_message_ids.mapped("code"))
                         )
-                        if (
-                            TicketBaiSchema.TicketBai.value
-                            == next_pending_invoice.schema
-                        ):
-                            if (
-                                InvoiceResponseCode.INVOICE_ALREADY_REGISTERED.value
-                                in response_codes
-                            ):
-                                next_pending_invoice.mark_as_sent()
-                                error = False
-                            elif (
-                                InvoiceResponseCode.SERVICE_NOT_AVAILABLE.value
-                                in response_codes
-                            ):
-                                retry_later = True
-                                error = False
-                        elif (
-                            TicketBaiSchema.AnulaTicketBai.value
-                            == next_pending_invoice.schema
-                        ):
-                            if (
-                                CancellationResponseCode.INVOICE_ALREADY_CANCELLED.value
-                                in response_codes
-                            ):
-                                next_pending_invoice.mark_as_sent()
-                                error = False
-                            elif (
-                                CancellationResponseCode.SERVICE_NOT_AVAILABLE.value
-                                in response_codes
-                            ):
-                                retry_later = True
-                                error = False
+                        if "005" in response_codes:
+                            # INVOICE_ALREADY_REGISTERED
+                            next_pending_invoice.mark_as_sent()
+                            error = False
+                        elif "006" in response_codes:
+                            # SERVICE_NOT_AVAILABLE
+                            retry_later = True
+                            error = False
                         if error:
                             self.mark_chain_as_error(next_pending_invoice)
                             rejected_retries += 1
-                    elif ResponseState.REQUEST_ERROR.value == tbai_response.state:
+                    elif tbai_response.state == "-1":
                         # In case of multi-company it would be delaying
                         # independently from the company and tax agency,
                         # maybe only one of them is out of service.
                         # For now delay for all companies and all tax agencies.
                         retry_later = True
-                    elif ResponseState.BUILD_ERROR.value == tbai_response.state:
+                    elif tbai_response.state == "-2":
                         retry_later = True
                     if not retry_later:
                         next_pending_invoice = self.get_next_pending_invoice()
@@ -763,12 +647,10 @@ class TicketBAIInvoice(models.Model):
         &i=<invoice_total_amount>&cr=<crc8>
         :return: OrderedDict
         """
-        res = OrderedDict(
-            [(TicketBaiQRParams.tbai_identifier.value, self.tbai_identifier)]
-        )
-        res[TicketBaiQRParams.invoice_number_prefix.value] = self.number_prefix or ""
-        res[TicketBaiQRParams.invoice_number.value] = self.number
-        res[TicketBaiQRParams.invoice_total_amount.value] = self.amount_total
+        res = OrderedDict([("id", self.tbai_identifier)])
+        res["s"] = self.number_prefix or ""
+        res["nf"] = self.number
+        res["i"] = self.amount_total
         return res
 
     def build_cancellation(self):
@@ -795,9 +677,9 @@ class TicketBAIInvoice(models.Model):
         }
 
     def get_tbai_xml_unsigned(self):
-        if self.schema == TicketBaiSchema.TicketBai.value:
+        if self.schema == "TicketBai":
             my_ordered_dict = self.build_invoice()
-        elif self.schema == TicketBaiSchema.AnulaTicketBai.value:
+        elif self.schema == "AnulaTicketBai":
             my_ordered_dict = self.build_cancellation()
         else:
             raise XMLSchemaModeNotSupported(
@@ -808,13 +690,13 @@ class TicketBAIInvoice(models.Model):
     def get_tbai_xml_signed_and_signature_value(self):
         root = self.get_tbai_xml_unsigned()
         p12 = self.company_id.tbai_certificate_get_p12()
-        tax_agency = self.company_id.tbai_tax_agency_id
+        tax_agency = self.company_id.tax_agency_id
         signature_value = XMLSchema.sign(root, p12, tax_agency)
         return root, signature_value
 
     def build_tbai_invoice(self):
         self.ensure_one()
-        if self.schema == TicketBaiSchema.TicketBai.value:
+        if self.schema == "TicketBai":
             self.previous_tbai_invoice_id = self.company_id.tbai_last_invoice_id
         root, signature_value = self.get_tbai_xml_signed_and_signature_value()
         root_str = etree.tostring(root, xml_declaration=True, encoding="utf-8")
@@ -822,8 +704,9 @@ class TicketBAIInvoice(models.Model):
         self.datas_fname = "%s.xsig" % self.name.replace("/", "-")
         self.file_size = len(self.datas)
         self.signature_value = signature_value
+        self._compute_tbai_qr()
         self.mark_as_pending()
-        if self.schema == TicketBaiSchema.TicketBai.value:
+        if self.schema == "TicketBai":
             self.company_id.tbai_last_invoice_id = self
 
     def build_cabecera(self):
@@ -839,7 +722,7 @@ class TicketBAIInvoice(models.Model):
         </complexType>
         :return: Tax Agency
         """
-        return {"IDVersionTBAI": self.company_id.tbai_tax_agency_id.version}
+        return {"IDVersionTBAI": self.company_id.tax_agency_id.tbai_version}
 
     def build_cabecera_factura(self):
         res = OrderedDict(
@@ -908,68 +791,67 @@ class TicketBAIInvoice(models.Model):
 
     def build_destinatarios(self):
         """Support only for one customer."""
-        gipuzkoa_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
-        )
-        araba_tax_agency = self.env.ref("l10n_es_ticketbai_api.tbai_tax_agency_araba")
-        tax_agency = self.company_id.tbai_tax_agency_id
         res = []
-        if 100 < len(self.tbai_customer_ids):
+        customer = self.partner_id.commercial_partner_id
+        if customer.aeat_anonymous_cash_customer or not customer:
+            return res
+        gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
+        araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
+        tax_agency = self.company_id.tax_agency_id
+        customer_res = OrderedDict()
+        nif = customer.tbai_get_value_nif()
+        if nif:
+            customer_res["NIF"] = nif
+        else:
+            id_otro = customer.tbai_build_id_otro()
+            if id_otro:
+                customer_res["IDOtro"] = id_otro
+        if "NIF" not in customer_res and "IDOtro" not in customer_res:
             raise exceptions.ValidationError(
                 _(
-                    "TicketBAI Invoice %s:\n"
-                    "Maximum 100 recipients allowed for each Invoice!"
+                    "TicketBAI Customer %(customer)s VAT Number or another "
+                    "type of identification is required."
                 )
-                % self.name
+                % {"customer": customer.name}
             )
-        for customer in self.tbai_customer_ids:
-            customer_res = OrderedDict()
-            if customer.nif:
-                customer_res["NIF"] = customer.nif
-            elif customer.idtype and customer.identification_number:
-                customer_res["IDOtro"] = OrderedDict()
-                if (
-                    customer.country_code
-                    and customer.idtype != TicketBaiCustomerIdType.T02.value
-                ):
-                    customer_res["IDOtro"]["CodigoPais"] = customer.country_code
-                customer_res["IDOtro"]["IDType"] = customer.idtype
-                customer_res["IDOtro"]["ID"] = customer.identification_number
-            customer_res["ApellidosNombreRazonSocial"] = customer.name
-            if customer.zip:
-                customer_res["CodigoPostal"] = customer.zip
-            elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %(name)s:\n"
-                        "ZIP code for %(customer)s is required for the "
-                        "Tax Agency %(agency)s!"
-                    )
-                    % {
-                        "name": self.name,
-                        "customer": customer.name,
-                        "agency": tax_agency.name,
-                    }
+        customer_res[
+            "ApellidosNombreRazonSocial"
+        ] = customer.tbai_get_value_apellidos_nombre_razon_social()
+        if customer.zip:
+            customer_res["CodigoPostal"] = customer.zip[:5]
+        elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
+            raise exceptions.ValidationError(
+                _(
+                    "TicketBAI Invoice %(name)s:\n"
+                    "ZIP code for %(customer)s is required for the "
+                    "Tax Agency %(agency)s!"
                 )
-            if customer.address:
-                customer_res["Direccion"] = customer.address
-            elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %(name)s:\n"
-                        "Address for %(customer)s is required for the "
-                        "Tax Agency %(agency)s!"
-                    )
-                    % {
-                        "name": self.name,
-                        "customer": customer.name,
-                        "agency": tax_agency.name,
-                    }
+                % {
+                    "name": self.name,
+                    "customer": customer.name,
+                    "agency": tax_agency.name,
+                }
+            )
+        address = customer.tbai_get_value_direccion()
+        if address:
+            customer_res["Direccion"] = address
+        elif tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
+            raise exceptions.ValidationError(
+                _(
+                    "TicketBAI Invoice %(name)s:\n"
+                    "Address for %(customer)s is required for the "
+                    "Tax Agency %(agency)s!"
                 )
-            if (
-                "NIF" in customer_res or "IDOtro" in customer_res
-            ) and "ApellidosNombreRazonSocial" in customer_res:
-                res.append(OrderedDict({"IDDestinatario": customer_res}))
+                % {
+                    "name": self.name,
+                    "customer": customer.name,
+                    "agency": tax_agency.name,
+                }
+            )
+        if (
+            "NIF" in customer_res or "IDOtro" in customer_res
+        ) and "ApellidosNombreRazonSocial" in customer_res:
+            res.append(OrderedDict({"IDDestinatario": customer_res}))
         return res
 
     def build_detalle_exenta(self):
@@ -1089,11 +971,9 @@ class TicketBAIInvoice(models.Model):
         return res
 
     def build_detalles_factura(self):
-        gipuzkoa_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
-        )
-        araba_tax_agency = self.env.ref("l10n_es_ticketbai_api.tbai_tax_agency_araba")
-        tax_agency = self.company_id.tbai_tax_agency_id
+        gipuzkoa_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_gipuzkoa")
+        araba_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_araba")
+        tax_agency = self.company_id.tax_agency_id
         if tax_agency in (gipuzkoa_tax_agency, araba_tax_agency):
             id_detalle_factura = self.build_id_detalle_factura()
             if id_detalle_factura:
@@ -1124,10 +1004,7 @@ class TicketBAIInvoice(models.Model):
         )
 
     def build_encadenamiento_factura_anterior(self):
-        if (
-            self.schema == TicketBaiSchema.TicketBai.value
-            and self.previous_tbai_invoice_id
-        ):
+        if self.schema == "TicketBai" and self.previous_tbai_invoice_id:
             signature_value = self.previous_tbai_invoice_id.signature_value
             if not signature_value:
                 raise exceptions.ValidationError(
@@ -1214,10 +1091,7 @@ class TicketBAIInvoice(models.Model):
 
     def build_facturas_rectificadas_sustituidas(self):
         res = {}
-        if (
-            self.is_invoice_refund
-            or SiNoType.S.value == self.substitutes_simplified_invoice
-        ):
+        if self.is_invoice_refund or self.substitutes_simplified_invoice == "S":
             refunds_values = []
             for refund in self.tbai_invoice_refund_ids:
                 vals = OrderedDict()
@@ -1275,7 +1149,7 @@ class TicketBAIInvoice(models.Model):
         )
 
     def build_importe_rectificacion_sustitutiva(self):
-        if RefundType.substitution.value == self.refund_type:
+        if self.refund_type == "S":
             res = OrderedDict(
                 [
                     ("BaseRectificada", self.substituted_invoice_amount_total_untaxed),
@@ -1357,26 +1231,24 @@ class TicketBAIInvoice(models.Model):
         return res
 
     def build_tipo_desglose(self):
-        spain_country_code = self.env.ref("base.es").code.upper()
+        partner = self.partner_id.commercial_partner_id
+        spain_country_code = self.env.ref("base.es").code
         spanish_or_no_customers = False
-        if 0 == len(self.tbai_customer_ids):
-            spanish_or_no_customers = True
+        if partner:
+            (
+                country_code,
+                identifier_type,
+                identifier,
+            ) = partner._parse_aeat_vat_info()
+            if (
+                identifier_type in ("02", "")
+                and country_code == spain_country_code
+                and not identifier.startswith("N")
+            ) or partner.aeat_anonymous_cash_customer:
+                spanish_or_no_customers = True
         else:
-            country_codes = list(set(self.tbai_customer_ids.mapped("country_code")))
-            if 1 < len(country_codes):
-                raise exceptions.ValidationError(
-                    _(
-                        "TicketBAI Invoice %s:\n"
-                        "All Invoice recipients must be from the same country."
-                    )
-                    % self.name
-                )
-            elif 1 == len(country_codes) and country_codes[0] == spain_country_code:
-                # Solo se admite desglose por operación cuando existe destinatario
-                # extranjero (tipo IDOtro o que sea un NIF que empiece por N)
-                spanish_or_no_customers = not (
-                    self.tbai_customer_ids[:1].nif or ""
-                ).startswith("N")
+            # sin cliente, probablemente una simplificada
+            spanish_or_no_customers = True
         if spanish_or_no_customers:
             res = {"DesgloseFactura": OrderedDict()}
             sujeta = self.build_sujeta()
@@ -1388,15 +1260,13 @@ class TicketBAIInvoice(models.Model):
         else:
             res = {"DesgloseTipoOperacion": OrderedDict()}
             prestacion_servicios = self.with_context(
-                tbai_tax_type=TicketBaiTaxType.service.value
+                tbai_tax_type="service"
             ).build_prestacion_servicios()
             if prestacion_servicios:
                 res["DesgloseTipoOperacion"][
                     "PrestacionServicios"
                 ] = prestacion_servicios
-            entrega = self.with_context(
-                tbai_tax_type=TicketBaiTaxType.provision_of_goods.value
-            ).build_entrega()
+            entrega = self.with_context(tbai_tax_type="goods").build_entrega()
             if entrega:
                 res["DesgloseTipoOperacion"]["Entrega"] = entrega
         return res

@@ -2,43 +2,15 @@
 # Copyright 2022 Landoo Sistemas de Informacion SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import base64
-from enum import Enum
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_response import (
-    TicketBaiCancellationResponseCode,
-    TicketBaiInvoiceResponseCode,
-    TicketBaiResponseState,
-)
-from odoo.addons.l10n_es_ticketbai_api.utils import utils as tbai_utils
 
 from ..lroe.lroe_xml_schema import (
     LROEOperationTypeEnum,
     LROEXMLSchema,
     LROEXMLSchemaModeNotSupported,
 )
-from .lroe_operation import LROEModelEnum, LROEOperationEnum
-
-
-class LROEOperationResponseState(Enum):
-    BUILD_ERROR = "-2"
-    REQUEST_ERROR = "-1"
-    CORRECT = "Correcto"
-    PARTIALLY_CORRECT = "ParcialmenteCorrecto"
-    INCORRECT = "Incorrecto"
-
-
-class LROEOperationResponseLineState(Enum):
-    CORRECT = "Correcto"
-    CORRECT_WITH_ERRORS = "AceptadoConErrores"
-    INCORRECT = "Incorrecto"
-
-
-class LROEOperationResponseLineCode(tbai_utils.EnumValues):
-    DUPLICATED_RECORD = "B4_2000003"
-    ALREADY_CANCELLED_RECORD = "B4_2000006"
 
 
 class LROEOperationResponse(models.Model):
@@ -57,11 +29,11 @@ class LROEOperationResponse(models.Model):
     xml_fname = fields.Char("XML File Name")
     state = fields.Selection(
         selection=[
-            (LROEOperationResponseState.BUILD_ERROR.value, "Build error"),
-            (LROEOperationResponseState.REQUEST_ERROR.value, "Request error"),
-            (LROEOperationResponseState.CORRECT.value, "Correct"),
-            (LROEOperationResponseState.PARTIALLY_CORRECT.value, "Partially correct"),
-            (LROEOperationResponseState.INCORRECT.value, "Incorrect"),
+            ("ErrorConstruccion", "Build error"),
+            ("ErrorSolicitud", "Request error"),
+            ("Correcto", "Correct"),
+            ("ParcialmenteCorrecto", "Partially correct"),
+            ("Incorrecto", "Incorrect"),
         ],
         required=True,
     )
@@ -74,23 +46,21 @@ class LROEOperationResponse(models.Model):
     @staticmethod
     def get_tbai_state(lroe_response_operation):
         if (
-            lroe_response_operation == LROEOperationResponseState.BUILD_ERROR.value
-            or lroe_response_operation == LROEOperationResponseState.REQUEST_ERROR.value
+            lroe_response_operation == "ErrorConstruccion"
+            or lroe_response_operation == "ErrorSolicitud"
         ):
-            return lroe_response_operation
-        if lroe_response_operation == LROEOperationResponseState.CORRECT.value:
-            return TicketBaiResponseState.RECEIVED.value
-        if lroe_response_operation == LROEOperationResponseState.INCORRECT.value:
-            return TicketBaiResponseState.REJECTED.value
+            return "-1"
+        if lroe_response_operation == "Correcto":
+            return "00"
+        if lroe_response_operation == "Incorrecto":
+            return "01"
         if (
-            lroe_response_operation
-            == LROEOperationResponseState.PARTIALLY_CORRECT.value
-            or lroe_response_operation
-            == LROEOperationResponseLineState.CORRECT_WITH_ERRORS.value
+            lroe_response_operation == "ParcialmenteCorrecto"
+            or lroe_response_operation == "AceptadoConErrores"
         ):
-            # TODO LROE: en caso de e envío de un único fichero se nos
-            # puede dar esta respuesta ??? que hacemos ???
-            return TicketBaiResponseState.RECEIVED.value
+            # TODO: LROE en caso de envío de un único fichero se nos
+            # puede dar esta respuesta??? que hacemos???
+            return "00"
         return None
 
     @api.model
@@ -99,22 +69,20 @@ class LROEOperationResponse(models.Model):
         tbai_response_model = self.env["tbai.response"]
         tbai_response_dict = {
             "tbai_invoice_id": lroe_operation.tbai_invoice_ids[0].id,
-            "state": LROEOperationResponse.get_tbai_state(
-                LROEOperationResponseState.REQUEST_ERROR.value
-            ),
+            "state": LROEOperationResponse.get_tbai_state("ErrorSolicitud"),
         }
         tbai_response_obj = tbai_response_model.create(tbai_response_dict)
         values.update(
             {
                 "lroe_operation_id": lroe_operation.id,
-                "state": LROEOperationResponseState.BUILD_ERROR.value,
+                "state": "ErrorConstruccion",
                 "description": _("Internal API or Operation error") + msg,
                 "response_line_ids": [
                     (
                         0,
                         0,
                         {
-                            "state": LROEOperationResponseLineState.INCORRECT.value,
+                            "state": "Incorrecto",
                             "tbai_response_id": tbai_response_obj.id,
                         },
                     )
@@ -126,9 +94,9 @@ class LROEOperationResponse(models.Model):
     @api.model
     def validate_response_line_state(self, response_line_record_state):
         if response_line_record_state not in [
-            LROEOperationResponseLineState.CORRECT.value,
-            LROEOperationResponseLineState.CORRECT_WITH_ERRORS.value,
-            LROEOperationResponseLineState.INCORRECT.value,
+            "Correcto",
+            "AceptadoConErrores",
+            "Incorrecto",
         ]:
             raise ValidationError(_("LROEOperationResponseLineState not VALID !"))
 
@@ -136,15 +104,11 @@ class LROEOperationResponse(models.Model):
     def get_lroe_xml_schema(self, lroe_operation):
         if not lroe_operation:
             raise ValidationError(_("LROE Operation required!"))
-        lroe_operation_model = (
-            "pj_240"
-            if LROEModelEnum.model_pj_240.value == lroe_operation.model
-            else "pf_140"
-        )
+        lroe_operation_model = "pj_240" if lroe_operation.model == "240" else "pf_140"
         operation_type_map = {
-            LROEOperationEnum.create.value: "resp_alta",
-            LROEOperationEnum.update.value: "resp_alta",
-            LROEOperationEnum.cancel.value: "resp_cancel",
+            "A00": "resp_alta",
+            "M00": "resp_alta",
+            "AN0": "resp_cancel",
         }
         operation_chaper_map = {
             "1": "sg_invoice",
@@ -195,10 +159,7 @@ class LROEOperationResponse(models.Model):
             self.validate_response_line_state(response_line_record_state)
             response_line_record_code = ""
             response_line_record_message = ""
-            if (
-                not response_line_record_state
-                == LROEOperationResponseLineState.CORRECT.value
-            ):
+            if not response_line_record_state == "Correcto":
                 response_line_record_code = response_line_record_data.get(
                     "CodigoErrorRegistro"
                 )
@@ -212,17 +173,7 @@ class LROEOperationResponse(models.Model):
             tbai_response_model = tbai_response_obj = self.env["tbai.response"]
             if lroe_operation.tbai_invoice_ids:
                 tbai_msg_description = response_line_record_message
-                tbai_msg_code = (
-                    TicketBaiInvoiceResponseCode.INVOICE_ALREADY_REGISTERED.value
-                    if LROEOperationResponseLineCode.DUPLICATED_RECORD.value
-                    == response_line_record_code
-                    else TicketBaiCancellationResponseCode.INVOICE_ALREADY_CANCELLED.value
-                    if LROEOperationResponseLineCode.ALREADY_CANCELLED_RECORD.value
-                    == response_line_record_code
-                    else response_line_record_code
-                    if response_line_record_code
-                    else ""
-                )
+                tbai_msg_code = response_line_record_code
                 tbai_response_dict = {
                     "tbai_invoice_id": lroe_operation.tbai_invoice_ids[0].id,
                     "state": LROEOperationResponse.get_tbai_state(
@@ -267,15 +218,13 @@ class LROEOperationResponse(models.Model):
             tbai_response_model = self.env["tbai.response"]
             tbai_response_dict = {
                 "tbai_invoice_id": lroe_operation.tbai_invoice_ids[:1].id,
-                "state": LROEOperationResponse.get_tbai_state(
-                    LROEOperationResponseState.REQUEST_ERROR.value
-                ),
+                "state": LROEOperationResponse.get_tbai_state("ErrorSolicitud"),
             }
             tbai_response_obj = tbai_response_model.create(tbai_response_dict)
             values.update(
                 {
                     "lroe_operation_id": lroe_operation.id,
-                    "state": LROEOperationResponseState.REQUEST_ERROR.value,
+                    "state": "ErrorSolicitud",
                     "code": lroe_srv_response_code if lroe_srv_response_code else errno,
                     "description": lroe_srv_response_message
                     if lroe_srv_response_message
@@ -285,7 +234,7 @@ class LROEOperationResponse(models.Model):
                             0,
                             0,
                             {
-                                "state": LROEOperationResponseLineState.INCORRECT.value,
+                                "state": "Incorrecto",
                                 "code": lroe_srv_response_code
                                 if lroe_srv_response_code
                                 else errno,
@@ -306,8 +255,8 @@ class LROEOperationResponse(models.Model):
                 }
             )
             if lroe_srv_response_type in [
-                LROEOperationResponseState.CORRECT.value,
-                LROEOperationResponseState.PARTIALLY_CORRECT.value,
+                "Correcto",
+                "ParcialmenteCorrecto",
             ]:
                 lroe_srv_rec_id = lroe_srv_response.get_lroe_srv_response_record_id()
                 lroe_srv_rec_number = (
@@ -371,7 +320,7 @@ class LROEOperationResponse(models.Model):
                                 0,
                                 0,
                                 {
-                                    "state": LROEOperationResponseLineState.INCORRECT.value,
+                                    "state": "Incorrecto",
                                     "code": lroe_srv_response_code
                                     if lroe_srv_response_code
                                     else errno,
@@ -407,12 +356,12 @@ class LROEOperationResponseLine(models.Model):
     )
     state = fields.Selection(
         selection=[
-            (LROEOperationResponseLineState.CORRECT.value, "Correct"),
+            ("Correcto", "Correct"),
             (
-                LROEOperationResponseLineState.CORRECT_WITH_ERRORS.value,
+                "AceptadoConErrores",
                 "Correct with errors",
             ),
-            (LROEOperationResponseLineState.INCORRECT.value, "Incorrect"),
+            ("Incorrecto", "Incorrect"),
         ],
         required=True,
     )
