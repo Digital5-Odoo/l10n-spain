@@ -24,7 +24,7 @@
                         />
                     </group>
                     <group name="tbai_vat_exemptions" string="VAT Exemptions">
-                        <field name="tbai_vat_exemption_ids" nolabel="1">
+                        <field name="tbai_vat_exemption_ids" nolabel="1" colspan="2">
                             <tree editable="bottom">
                                 <field name="tax_id" />
                                 <field
@@ -44,20 +44,24 @@
         <field name="inherit_id" ref="account.view_account_position_template_form" />
         <field name="arch" type="xml">
             <field name="account_ids" position="after">
-                <field
-                    name="tbai_vat_regime_key"
-                    options="{'no_open':True,'no_create':True}"
-                />
-                <field
-                    name="tbai_vat_regime_key2"
-                    options="{'no_open':True,'no_create':True}"
-                />
-                <field
-                    name="tbai_vat_regime_key3"
-                    options="{'no_open':True,'no_create':True}"
-                />
+                <group name="tbai_vat_regimes" string="VAT Regimes">
+                    <group name="tbai_vat_regimes_sale">
+                        <field
+                            name="tbai_vat_regime_key"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                        <field
+                            name="tbai_vat_regime_key2"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                        <field
+                            name="tbai_vat_regime_key3"
+                            options="{'no_open':True,'no_create':True}"
+                        />
+                    </group>
+                </group>
                 <group name="tbai_vat_exemptions" string="VAT Exemptions">
-                    <field name="tbai_vat_exemption_ids" nolabel="1">
+                    <field name="tbai_vat_exemption_ids" nolabel="1" colspan="2">
                         <tree editable="bottom">
                             <field name="tax_id" />
                             <field

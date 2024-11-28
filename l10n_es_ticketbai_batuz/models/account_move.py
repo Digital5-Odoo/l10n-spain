@@ -7,18 +7,7 @@ import json
 from collections import OrderedDict
 
 from odoo import _, api, exceptions, fields, models
-
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import (
-    RefundCode,
-    RefundType,
-)
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice_customer import (
-    TicketBaiCustomerIdType,
-)
-from odoo.addons.l10n_es_ticketbai_api_batuz.models.lroe_operation import (
-    LROEModelEnum,
-    LROEOperationEnum,
-)
+from odoo.exceptions import UserError
 
 LROE_STATES = [
     ("not_sent", "Not recorded"),
@@ -109,17 +98,19 @@ class AccountMove(models.Model):
         readonly=True,
     )
 
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_lroe_operation_ids(self):
+        if self.lroe_operation_ids:
+            raise UserError(_("You can't delete an invoice with LROE operations."))
+
     @api.depends(
         "tbai_invoice_ids",
         "tbai_invoice_ids.state",
-        "tbai_cancellation_ids",
-        "tbai_cancellation_ids.state",
     )
     def _compute_lroe_response_line_ids(self):
+        response_line_model = self.env["lroe.operation.response.line"]
         for record in self:
-            response_line_model = self.env["lroe.operation.response.line"]
             response_ids = record.tbai_invoice_ids.mapped("tbai_response_ids").ids
-            response_ids += record.tbai_cancellation_ids.mapped("tbai_response_ids").ids
             response_lines = response_line_model.search(
                 [("tbai_response_id", "in", response_ids)]
             )
@@ -127,18 +118,16 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        bizkaia_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia")
         for vals in vals_list:
             company = self.env["res.company"].browse(
                 vals.get("company_id", self.env.user.company_id.id)
             )
-            tbai_tax_agency_id = company.tbai_tax_agency_id
+            tax_agency_id = company.tax_agency_id
             if (
                 not company.tbai_enabled
-                or not tbai_tax_agency_id
-                or tbai_tax_agency_id.id
-                != self.env.ref(
-                    "l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia"
-                ).id
+                or not tax_agency_id
+                or tax_agency_id != bizkaia_tax_agency
             ):
                 continue
             invoice_type = vals.get("move_type", False) or self._context.get(
@@ -150,9 +139,9 @@ class AccountMove(models.Model):
             if refund_method and invoice_type:
                 if "in_refund" == invoice_type:
                     if not vals.get("tbai_refund_type", False):
-                        vals["tbai_refund_type"] = RefundType.differences.value
+                        vals["tbai_refund_type"] = "I"
                     if not vals.get("tbai_refund_key", False):
-                        vals["tbai_refund_key"] = RefundCode.R1.value
+                        vals["tbai_refund_key"] = "R1"
             if "name" in vals and vals["name"]:
                 vals["tbai_description_operation"] = vals["name"]
 
@@ -178,10 +167,10 @@ class AccountMove(models.Model):
     def _get_chapter_subchapter(self):
         """Identificamos el capitulo y subcapitulo"""
         self.ensure_one()
-        if self.company_id.lroe_model == LROEModelEnum.model_pj_240.value:
+        if self.company_id.lroe_model == "240":
             chapter = self.env.ref("l10n_es_ticketbai_api_batuz.lroe_chapter_pj_240_2")
             return chapter.code, False
-        elif self.company_id.lroe_model == LROEModelEnum.model_pf_140.value:
+        elif self.company_id.lroe_model == "140":
             chapter = self.env.ref("l10n_es_ticketbai_api_batuz.lroe_chapter_pf_140_2")
             subchapter = self.env.ref(
                 "l10n_es_ticketbai_api_batuz.lroe_subchapter_pf_140_2_1"
@@ -197,14 +186,14 @@ class AccountMove(models.Model):
 
     def batuz_get_supplier_serie_factura(self):
         """Consultamos a hacienda cómo extraer la serie de una factura de proveedor.
-        Al no ser posible en algunos casos, decidimos tomar ciertos caracteres
-        como serie y el resto como número.
+        Al no ser posible en algunos casos, decidimos pasar como serie el año extraído
+          de la fecha de factura y dejar como número la referencia.
         Aunque la serie no es obligatoria en facturas recibidas,
         sí lo es en las rectificativas, por lo que es necesario informarla siempre."""
-        return self.ref[:3]
+        return self.invoice_date.strftime("%Y")
 
     def batuz_get_supplier_num_factura(self):
-        return self.ref[3:]
+        return self.ref
 
     def _get_lroe_identifier(self):
         """Get the LROE structure for a partner identifier.
@@ -213,22 +202,13 @@ class AccountMove(models.Model):
         self.ensure_one()
         res = OrderedDict()
         partner = self.partner_id.commercial_partner_id
-        idtype = partner.tbai_partner_idtype
-        if partner.vat:
-            vat = "".join(e for e in partner.vat if e.isalnum()).upper()
+        nif = partner.tbai_get_value_nif()
+        if nif:
+            res["NIF"] = nif
         else:
-            vat = "NO_DISPONIBLE"
-        country_code = partner._parse_aeat_vat_info()[0]
-        if idtype == TicketBaiCustomerIdType.T02.value:
-            if country_code != "ES":
-                id_type = "06" if vat == "NO_DISPONIBLE" else "02"
-                res["IDOtro"] = OrderedDict([("IDType", id_type), ("ID", vat)])
-            else:
-                res["NIF"] = vat[2:] if vat.startswith(country_code) else vat
-        elif idtype:
-            res["IDOtro"] = OrderedDict(
-                [("CodigoPais", country_code), ("IDType", idtype), ("ID", vat)]
-            )
+            id_otro = partner.tbai_build_id_otro()
+            if id_otro:
+                res["IDOtro"] = id_otro
         res[
             "ApellidosNombreRazonSocial"
         ] = partner.tbai_get_value_apellidos_nombre_razon_social()
@@ -238,7 +218,7 @@ class AccountMove(models.Model):
         """Inheritable method to allow control when an
         invoice are simplified or normal"""
         partner = self.partner_id.commercial_partner_id
-        is_simplified = partner.lroe_simplified_invoice
+        is_simplified = partner.aeat_simplified_invoice
         return is_simplified
 
     def _get_operation_date(self):
@@ -684,7 +664,7 @@ class AccountMove(models.Model):
         Buscamos lroe.operation pendiente de envío con misma operacion (type)
         y mismo capítulo + subcapítulo
         :param company_id: (int) company id
-        :param operation_type: LROEOperationEnum.value
+        :param operation_type: A00, AN0, M00 or C00
         :param chapter: LROEChapterEnum.value
         :param subchapter: LROEChapterEnum.value
         :return: lroe.operation object if any
@@ -696,7 +676,7 @@ class AccountMove(models.Model):
         chapter_id = self.env["lroe.chapter"].search([("code", "=", chapter)], limit=1)
         res = {
             "lroe_chapter_id": chapter_id.id,
-            "type": operation_type.value,
+            "type": operation_type,
         }
         if subchapter:
             subchapter_id = self.env["lroe.chapter"].search([("code", "=", subchapter)])
@@ -721,6 +701,7 @@ class AccountMove(models.Model):
             subchapter=subchapter,
         )
         lroe_operation = lroe_model.sudo().create(vals)
+        lroe_operation._compute_api_url()
         return lroe_operation
 
     def _prepare_invoice_for_lroe(self, operation_type=None):
@@ -728,7 +709,7 @@ class AccountMove(models.Model):
         capítulo/subcapítulo. Se crea un objeto lroe.operation por cada factura.
         Aunque hacienda permite un envio LROE con hasta 1.000 facturas TBAI
         o 10.000 facturas recibidas.
-        :param operation_type: LROEOperationEnum
+        :param operation_type: A00, AN0, M00 or C00
         :return:
         """
         if not operation_type:
@@ -743,7 +724,7 @@ class AccountMove(models.Model):
                         "because there is a job running!"
                     )
                 )
-            cancel = True if operation_type == LROEOperationEnum.cancel else False
+            cancel = True if operation_type == "AN0" else False
             chapter, subchapter = invoice._get_chapter_subchapter()
             action = subchapter.replace(".", "_") if subchapter else chapter
             model = invoice.company_id.lroe_model
@@ -787,15 +768,16 @@ class AccountMove(models.Model):
     def action_send_lroe_manually(self):
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
+            and x.tbai_send_invoice
             and (
                 x.move_type == "in_invoice"
                 or (
                     x.move_type == "in_refund"
                     and (x.reversed_entry_id or x.tbai_refund_origin_ids)
-                    and x.tbai_refund_type
-                    in (RefundType.differences.value, RefundType.substitution.value)
+                    and x.tbai_refund_type in ("I", "S")
                 )
             )
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
             if lroe_invoice.lroe_state in (
@@ -803,13 +785,9 @@ class AccountMove(models.Model):
                 "recorded_modified",
                 "cancel_modified",
             ):
-                lroe_invoices._prepare_invoice_for_lroe(
-                    operation_type=LROEOperationEnum.update
-                )
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
             elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
-                lroe_invoices._prepare_invoice_for_lroe(
-                    operation_type=LROEOperationEnum.create
-                )
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
 
     # LROE STATE MANAGEMENT
     def set_lroe_state_pending(self):
@@ -845,16 +823,17 @@ class AccountMove(models.Model):
         res = super().button_cancel()
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
+            and x.tbai_send_invoice
             and x.lroe_state not in ("error")
             and (
                 x.move_type == "in_invoice"
                 or (
                     x.move_type == "in_refund"
                     and (x.reversed_entry_id or x.tbai_refund_origin_ids)
-                    and x.tbai_refund_type
-                    in (RefundType.differences.value, RefundType.substitution.value)
+                    and x.tbai_refund_type in ("I", "S")
                 )
             )
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
         for invoice in lroe_invoices:
             if invoice.lroe_state == "recorded":
@@ -863,7 +842,7 @@ class AccountMove(models.Model):
                 # Case when repoen a cancelled invoice, validate and cancel
                 # again without any LROE communication.
                 invoice.set_lroe_state_cancel()
-        lroe_invoices._prepare_invoice_for_lroe(operation_type=LROEOperationEnum.cancel)
+        lroe_invoices._prepare_invoice_for_lroe(operation_type="AN0")
         return res
 
     def action_invoice_draft(self):
@@ -878,21 +857,20 @@ class AccountMove(models.Model):
 
     def _post(self, soft=True):
         res = super(AccountMove, self)._post(soft)
-        bizkaia_tax_agency = self.env.ref(
-            "l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia"
-        )
+        bizkaia_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia")
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
-            and x.company_id.tbai_tax_agency_id == bizkaia_tax_agency
+            and x.company_id.tax_agency_id == bizkaia_tax_agency
+            and x.tbai_send_invoice
             and (
                 x.move_type == "in_invoice"
                 or (
                     x.move_type == "in_refund"
                     and (x.reversed_entry_id or x.tbai_refund_origin_ids)
-                    and x.tbai_refund_type
-                    in (RefundType.differences.value, RefundType.substitution.value)
+                    and x.tbai_refund_type in ("I", "S")
                 )
             )
+            and x.invoice_date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
             if lroe_invoice.lroe_state in (
@@ -900,13 +878,9 @@ class AccountMove(models.Model):
                 "recorded_modified",
                 "cancel_modified",
             ):
-                lroe_invoices._prepare_invoice_for_lroe(
-                    operation_type=LROEOperationEnum.update
-                )
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
             elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
-                lroe_invoices._prepare_invoice_for_lroe(
-                    operation_type=LROEOperationEnum.create
-                )
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
         return res
 
     @api.model

@@ -1,10 +1,8 @@
 # Copyright 2021 Binovo IT Human Project SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from datetime import datetime, timedelta
 
 from odoo import exceptions
 from odoo.tests.common import tagged
-from odoo.tools.misc import DEFAULT_SERVER_DATE_FORMAT
 
 from ..ticketbai.xml_schema import XMLSchema
 from .common import TestL10nEsTicketBAIAPI
@@ -25,37 +23,9 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
-
-    def test_missing_customer_address(self):
-        uid = self.tech_user.id
-        invoice = self.create_tbai_national_invoice(
-            name="TBAITEST/00001",
-            company_id=self.main_company.id,
-            number="00001",
-            number_prefix="TBAITEST/",
-            uid=uid,
-        )
-        self.assertEqual(invoice.state, "draft")
-        self.env["tbai.invoice.customer"].create(
-            {
-                "tbai_invoice_id": invoice.id,
-                "name": self.partner.tbai_get_value_apellidos_nombre_razon_social(),
-                "country_code": self.partner.country_id.code.upper(),
-                "nif": self.partner.tbai_get_value_nif(),
-                "identification_number": self.partner.tbai_partner_identification_number
-                or self.partner.vat,
-                "idtype": self.partner.tbai_partner_idtype,
-                "zip": self.partner.zip,
-            }
-        )
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
-        with self.assertRaises(exceptions.ValidationError):
-            invoice.get_tbai_xml_signed_and_signature_value()
 
     def test_missing_customer_zip(self):
         uid = self.tech_user.id
@@ -67,19 +37,10 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.env["tbai.invoice.customer"].create(
-            {
-                "tbai_invoice_id": invoice.id,
-                "name": self.partner.tbai_get_value_apellidos_nombre_razon_social(),
-                "country_code": self.partner.country_id.code.upper(),
-                "nif": self.partner.tbai_get_value_nif(),
-                "identification_number": self.partner.tbai_partner_identification_number
-                or self.partner.vat,
-                "idtype": self.partner.tbai_partner_idtype,
-                "address": self.partner.tbai_get_value_direccion(),
-            }
-        )
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
+        self.partner.zip = ""
+        with self.assertRaises(exceptions.ValidationError):
+            invoice.get_tbai_xml_signed_and_signature_value()
+        self.partner.zip = "48014"
         with self.assertRaises(exceptions.ValidationError):
             invoice.get_tbai_xml_signed_and_signature_value()
 
@@ -91,7 +52,7 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
 
     def test_qr_url(self):
         uid = self.tech_user.id
-        qr_base_url = self.main_company.tbai_tax_agency_id.test_qr_base_url
+        qr_base_url = self.main_company.tax_agency_id.tbai_test_qr_base_url
         invoice = self.create_tbai_national_invoice(
             name="TBAITEST/00001",
             company_id=self.main_company.id,
@@ -100,27 +61,7 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
-        self.assertEqual(qr_base_url, invoice.qr_url[: len(qr_base_url)])
-        # Simulate new Tax Agency Version
-        current_version = self.main_company.tbai_tax_agency_id.get_current_version()
-        yesterday = (datetime.now() - timedelta(days=1)).strftime(
-            DEFAULT_SERVER_DATE_FORMAT
-        )
-        current_version.date_to = yesterday
-        version = self.env["tbai.tax.agency.version"].create(
-            {
-                "tbai_tax_agency_id": self.main_company.tbai_tax_agency_id.id,
-                "version": "0.0",
-                "qr_base_url": "https://qr-base-url.eus/",
-                "test_qr_base_url": "https://test-qr-base-url.eus/",
-                "test_rest_url_invoice": "",
-                "test_rest_url_cancellation": "",
-            }
-        )
-        qr_base_url = self.main_company.tbai_tax_agency_id.test_qr_base_url
-        self.assertEqual(qr_base_url, version.test_qr_base_url)
         self.assertEqual(qr_base_url, invoice.qr_url[: len(qr_base_url)])
 
     def _prepare_invoice_send_to_tax_agency(self):
@@ -134,7 +75,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
 
@@ -156,7 +96,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self.assertEqual(invoice.state, "pending")
         self.assertEqual(self.main_company.tbai_last_invoice_id, invoice)
@@ -169,7 +108,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice2.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice2.id, self.partner)
         invoice2.build_tbai_invoice()
         self.assertEqual(invoice2.state, "pending")
         self.assertEqual(invoice2.previous_tbai_invoice_id, invoice)
@@ -183,7 +121,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice3.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice3.id, self.partner)
         invoice3.build_tbai_invoice()
         self.assertEqual(invoice3.state, "pending")
         self.assertEqual(invoice3.previous_tbai_invoice_id, invoice2)
@@ -208,8 +145,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -225,7 +160,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
 
@@ -246,8 +180,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -263,7 +195,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
 
@@ -284,10 +215,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(
-            invoice.id, self.partner_extracommunity
-        )
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -302,9 +229,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number=number,
             number_prefix=self.number_prefix,
             uid=uid,
-        )
-        self.add_customer_from_odoo_partner_to_invoice(
-            invoice.id, self.partner_extracommunity
         )
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
@@ -326,10 +250,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(
-            invoice.id, self.partner_intracommunity
-        )
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -344,9 +264,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number=number,
             number_prefix=self.number_prefix,
             uid=uid,
-        )
-        self.add_customer_from_odoo_partner_to_invoice(
-            invoice.id, self.partner_intracommunity
         )
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
@@ -368,8 +285,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -385,7 +300,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
 
@@ -406,8 +320,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(invoice.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
-        self.assertEqual(1, len(invoice.tbai_customer_ids))
         root, signature_value = invoice.get_tbai_xml_signed_and_signature_value()
         res = XMLSchema.xml_is_valid(self.test_xml_invoice_schema_doc, root)
         self.assertTrue(res)
@@ -423,7 +335,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
 
@@ -445,10 +356,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(refund_invoice_i.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(
-            refund_invoice_i.id, self.partner
-        )
-        self.assertEqual(1, len(refund_invoice_i.tbai_customer_ids))
         (
             root,
             signature_value,
@@ -465,10 +372,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             uid=uid,
         )
         self.assertEqual(refund_invoice_s.state, "draft")
-        self.add_customer_from_odoo_partner_to_invoice(
-            refund_invoice_s.id, self.partner
-        )
-        self.assertEqual(1, len(refund_invoice_s.tbai_customer_ids))
         (
             root,
             signature_value,
@@ -488,7 +391,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
         # By differences
@@ -500,9 +402,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number=number,
             number_prefix=self.refund_number_prefix,
             uid=uid,
-        )
-        self.add_customer_from_odoo_partner_to_invoice(
-            refund_invoice_i.id, self.partner
         )
         refund_invoice_i.build_tbai_invoice()
         self._send_to_tax_agency(refund_invoice_i)
@@ -526,7 +425,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number_prefix=self.number_prefix,
             uid=uid,
         )
-        self.add_customer_from_odoo_partner_to_invoice(invoice.id, self.partner)
         invoice.build_tbai_invoice()
         self._send_to_tax_agency(invoice)
         # By substitution
@@ -538,9 +436,6 @@ class TestL10nEsTicketBAIInvoice(TestL10nEsTicketBAIAPI):
             number=number,
             number_prefix=self.refund_number_prefix,
             uid=uid,
-        )
-        self.add_customer_from_odoo_partner_to_invoice(
-            refund_invoice_i.id, self.partner
         )
         refund_invoice_i.build_tbai_invoice()
         self._send_to_tax_agency(refund_invoice_i)
