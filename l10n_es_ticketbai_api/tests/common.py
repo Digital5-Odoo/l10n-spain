@@ -12,15 +12,7 @@ from odoo import fields
 from odoo.tests import common
 from odoo.tests.common import tagged
 
-from ..models.ticketbai_invoice import RefundCode, RefundType
-from ..models.ticketbai_invoice_tax import (
-    ExemptedCause,
-    NotExemptedType,
-    NotSubjectToCause,
-    SurchargeOrSimplifiedRegimeType,
-    VATRegimeKey,
-)
-from ..ticketbai.xml_schema import TicketBaiSchema, XMLSchema
+from ..ticketbai.xml_schema import XMLSchema
 
 
 @tagged("post_install", "-at_install")
@@ -60,7 +52,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             .with_user(uid)
             .create(
                 {
-                    "schema": TicketBaiSchema.AnulaTicketBai.value,
+                    "schema": "AnulaTicketBai",
                     "name": name,
                     "company_id": company_id,
                     "number": number,
@@ -86,7 +78,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
         substituted_invoice_total_tax_amount=0.0,
     ):
         vals = {
-            "schema": TicketBaiSchema.TicketBai.value,
+            "schema": "TicketBai",
             "name": name,
             "company_id": company_id,
             "number": number,
@@ -116,7 +108,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
                     ],
                 }
             )
-            if RefundType.substitution.value == refund_type:
+            if refund_type == "S":
                 vals.update(
                     {
                         "substituted_invoice_amount_total_untaxed": "%.2f"
@@ -202,7 +194,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=True,
-            exempted_cause=ExemptedCause.E1.value,
+            exempted_cause="E1",
         )
         vals.update(
             {
@@ -249,7 +241,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=False,
-            not_exempted_type=NotExemptedType.S1.value,
+            not_exempted_type="S1",
             amount=21.0,
             amount_total=amount_total - amount_total_untaxed,
         )
@@ -294,7 +286,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
         tax_vals = self._get_invoice_tax_values(
             base=amount_total,
             is_subject_to=False,
-            not_subject_to_cause=NotSubjectToCause.RL.value,
+            not_subject_to_cause="RL",
         )
         vals.update(
             {
@@ -318,7 +310,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             company_id=company_id,
             number=number,
             number_prefix=number_prefix,
-            vat_regime_key=VATRegimeKey.K02.value,
+            vat_regime_key="02",
         )
         l1_qty = 1.0
         l1_price_unit = 100.0
@@ -342,7 +334,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=True,
-            exempted_cause=ExemptedCause.E2.value,
+            exempted_cause="E2",
         )
         vals.update(
             {
@@ -386,7 +378,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=True,
-            exempted_cause=ExemptedCause.E5.value,
+            exempted_cause="E5",
         )
         vals.update(
             {
@@ -436,7 +428,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=False,
-            not_exempted_type=NotExemptedType.S1.value,
+            not_exempted_type="S1",
             amount=21.0,
             amount_total=amount_total_untaxed * 0.21,
         )
@@ -489,12 +481,12 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=False,
-            not_exempted_type=NotExemptedType.S1.value,
+            not_exempted_type="S1",
             amount=21.0,
             amount_total=amount_total_untaxed * 0.21,
             re_amount=5.2,
             re_amount_total=total_surcharge,
-            surcharge_or_simplified_regime=SurchargeOrSimplifiedRegimeType.S.value,
+            surcharge_or_simplified_regime="S",
         )
         vals.update(
             {
@@ -521,8 +513,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             number=number,
             number_prefix=number_prefix,
             is_invoice_refund=True,
-            refund_code=RefundCode.R1.value,
-            refund_type=RefundType.differences.value,
+            refund_code="R1",
+            refund_type="I",
             refunded_invoice_number="00001",
             refunded_invoice_number_prefix="TBAITEST/",
         )
@@ -539,7 +531,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=False,
-            not_exempted_type=NotExemptedType.S1.value,
+            not_exempted_type="S1",
             amount=21.0,
             amount_total=amount_total - amount_total_untaxed,
         )
@@ -580,8 +572,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             number=number,
             number_prefix=number_prefix,
             is_invoice_refund=True,
-            refund_code=RefundCode.R1.value,
-            refund_type=RefundType.substitution.value,
+            refund_code="R1",
+            refund_type="S",
             refunded_invoice_number="00001",
             refunded_invoice_number_prefix="TBAITEST/",
             substituted_invoice_amount_total_untaxed=original_amount_total_untaxed,
@@ -612,7 +604,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             base=amount_total,
             is_subject_to=True,
             is_exempted=False,
-            not_exempted_type=NotExemptedType.S1.value,
+            not_exempted_type="S1",
             amount=21.0,
             amount_total=amount_total - amount_total_untaxed,
         )
@@ -624,21 +616,6 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             }
         )
         return self.env["tbai.invoice"].with_user(uid).create(vals)
-
-    def add_customer_from_odoo_partner_to_invoice(self, tbai_invoice_id, partner):
-        return self.env["tbai.invoice.customer"].create(
-            {
-                "tbai_invoice_id": tbai_invoice_id,
-                "name": partner.tbai_get_value_apellidos_nombre_razon_social(),
-                "country_code": partner.country_id.code.upper(),
-                "nif": partner.tbai_get_value_nif(),
-                "identification_number": partner.tbai_partner_identification_number
-                or partner.vat,
-                "idtype": partner.tbai_partner_idtype,
-                "address": partner.tbai_get_value_direccion(),
-                "zip": partner.zip,
-            }
-        )
 
     def create_certificate(self, company_id, cert_path, cert_password):
         with open(cert_path, "rb") as f:
@@ -664,8 +641,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             vals.pop("refund_invoice_number")
         vals.update(
             {
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
+                "tax_agency_id": self.env.ref(
+                    "l10n_es_aeat.aeat_tax_agency_gipuzkoa"
                 ).id,
             }
         )
@@ -684,9 +661,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             vals.pop("refund_invoice_number")
         vals.update(
             {
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_araba"
-                ).id,
+                "tax_agency_id": self.env.ref("l10n_es_aeat.aeat_tax_agency_araba").id,
             }
         )
         company.write(vals)
@@ -719,8 +694,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
             {
                 "tbai_enabled": True,
                 "tbai_test_enabled": True,
-                "tbai_tax_agency_id": self.env.ref(
-                    "l10n_es_ticketbai_api.tbai_tax_agency_gipuzkoa"
+                "tax_agency_id": self.env.ref(
+                    "l10n_es_aeat.aeat_tax_agency_gipuzkoa"
                 ).id,
                 "currency_id": self.env.ref("base.EUR").id,
                 "tbai_certificate_id": certificate.id,
@@ -809,8 +784,8 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
                 "zip": "438-8501",
                 "country_id": self.env.ref("base.jp").id,
                 "street": "2500 Shingai, Iwata-shi",
-                "tbai_partner_idtype": "06",
-                "tbai_partner_identification_number": "JP3942800008",
+                "aeat_identification_type": "06",
+                "aeat_identification": "JP3942800008",
                 "phone": "+81 03-5713-3820",
                 "website": "https://global.yamaha-motor.com",
             }
@@ -825,7 +800,7 @@ class TestL10nEsTicketBAIAPI(common.TransactionCase):
                 "country_id": self.env.ref("base.fr").id,
                 "vat": "FR82542065479",
                 "street": "2 BD DE L EUROPE",
-                "tbai_partner_idtype": "02",
+                "aeat_identification_type": "02",
                 "website": "www.groupe-psa.com",
             }
         )

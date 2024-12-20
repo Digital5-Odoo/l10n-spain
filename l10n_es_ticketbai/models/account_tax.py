@@ -3,12 +3,7 @@
 # Copyright 2021 Digital5, S.L.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import _, exceptions, models
-
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import RefundType
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice_tax import (
-    NotSubjectToCause,
-    TicketBaiTaxType,
-)
+from odoo.tools import float_is_zero
 
 
 class AccountTax(models.Model):
@@ -24,7 +19,11 @@ class AccountTax(models.Model):
         return self not in s_iva_ns_taxes
 
     def tbai_is_tax_exempted(self):
-        return self.tax_group_id.id == self.env.ref("l10n_es.tax_group_iva_0").id
+        map_ids = self.env["tbai.tax.map"].search([("code", "in", ["IEE", "SER"])])
+        tax_ids = self.company_id.get_taxes_from_templates(
+            map_ids.mapped("tax_template_ids")
+        )
+        return self in tax_ids
 
     def tbai_get_exemption_cause(self, invoice_id):
         return (
@@ -91,9 +90,9 @@ class AccountTax(models.Model):
 
     def tbai_get_value_tax_type(self):
         if self.tbai_es_prestacion_servicios():
-            res = TicketBaiTaxType.service.value
+            res = "service"
         elif self.tbai_es_entrega():
-            res = TicketBaiTaxType.provision_of_goods.value
+            res = "goods"
         else:
             res = None
         return res
@@ -134,11 +133,11 @@ class AccountTax(models.Model):
                 fp_not_subject_tai
                 and fp_not_subject_tai == invoice_id.fiscal_position_id
             ):
-                res = NotSubjectToCause.RL.value
+                res = "RL"
             else:
-                res = NotSubjectToCause.OT.value
+                res = "OT"
         elif country_code:
-            res = NotSubjectToCause.RL.value
+            res = "RL"
         else:
             raise exceptions.ValidationError(
                 _("Country code for partner %s not found!") % invoice_id.partner_id.name
@@ -146,7 +145,7 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_base_imponible(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
@@ -175,11 +174,15 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_cuota_impuesto(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1
         amount_total = self.tbai_get_amount_total_company(invoice_id)
+        if float_is_zero(
+            amount_total, precision_rounding=invoice_id.currency_id.rounding
+        ):
+            return "%.2f" % (amount_total)
         return "%.2f" % (sign * amount_total)
 
     def tbai_get_value_tipo_recargo_equiv(self, invoice_id):
@@ -191,7 +194,7 @@ class AccountTax(models.Model):
         return res
 
     def tbai_get_value_cuota_recargo_equiv(self, invoice_id):
-        if RefundType.differences.value == invoice_id.tbai_refund_type:
+        if invoice_id.tbai_refund_type == "I":
             sign = -1
         else:
             sign = 1

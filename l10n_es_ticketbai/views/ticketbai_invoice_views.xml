@@ -28,7 +28,6 @@
                 <sheet>
                     <group>
                         <group name="invoice" string="Invoice">
-                            <field name="schema" invisible="1" />
                             <field name="name" invisible="1" />
                             <field name="invoice_id" readonly="1" />
                             <field
@@ -46,6 +45,7 @@
                                 readonly="1"
                                 widget="CopyClipboardChar"
                             />
+                            <field name="schema" />
                         </group>
                         <group name="file" string="File">
                             <field
@@ -74,6 +74,90 @@
                                 style="min-width: 30mm; max-width: 40mm"
                             />
                         </group>
+                        <group
+                            name="tbai_responses"
+                            string="Responses"
+                            attrs="{'invisible': [('tbai_response_ids', '=', [])]}"
+                        >
+                            <field
+                                name="tbai_response_ids"
+                                nolabel="1"
+                                options="{'no_create_edit': True}"
+                                colspan="2"
+                            >
+                                <form>
+                                    <header>
+                                        <field
+                                            name="state"
+                                            widget="statusbar"
+                                            readonly="1"
+                                        />
+                                    </header>
+                                    <sheet>
+                                        <group name="tbai_response_main_group">
+                                            <field
+                                                name="xml"
+                                                filename="xml_fname"
+                                                readonly="1"
+                                            />
+                                            <field
+                                                name="xml_fname"
+                                                invisible="1"
+                                                class="oe_inline oe_right"
+                                            />
+                                        </group>
+                                        <group
+                                            name="tbai_response_messages_group"
+                                            string="Messages"
+                                            cols="4"
+                                        >
+                                            <field
+                                                name="tbai_response_message_ids"
+                                                nolabel="1"
+                                                readonly="1"
+                                                colspan="2"
+                                            >
+                                                <form>
+                                                    <group>
+                                                        <field
+                                                            name="tbai_response_id"
+                                                            invisible="1"
+                                                        />
+                                                        <field
+                                                            name="code"
+                                                            readonly="1"
+                                                        />
+                                                        <field
+                                                            name="description"
+                                                            readonly="1"
+                                                        />
+                                                    </group>
+                                                </form>
+                                                <tree create="false" delete="false">
+                                                    <field
+                                                        name="tbai_response_id"
+                                                        invisible="1"
+                                                    />
+                                                    <field name="code" readonly="1" />
+                                                    <field
+                                                        name="description"
+                                                        readonly="1"
+                                                    />
+                                                </tree>
+                                            </field>
+                                        </group>
+                                    </sheet>
+                                </form>
+                                <tree create="false" delete="false">
+                                    <field name="create_date" />
+                                    <field
+                                        name="tbai_response_message_ids"
+                                        widget="many2many_tags"
+                                    />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </group>
                     </group>
                 </sheet>
             </form>
@@ -86,7 +170,7 @@
             <tree create="false" delete="false">
                 <field name="create_date" />
                 <field name="name" />
-                <field name="schema" invisible="1" />
+                <field name="schema" />
                 <field name="invoice_id" invisible="1" />
                 <field
                     name="qr_url"
@@ -104,6 +188,11 @@
             <search string="TicketBAI Invoice">
                 <field name="invoice_id" />
                 <field name="company_id" groups="base.group_multi_company" />
+                <filter
+                    string="With error"
+                    name="w_error"
+                    domain="[('state', '=', 'error')]"
+                />
                 <group expand="1" string="Group By">
                     <filter
                         string="Company"

@@ -4,7 +4,7 @@
 
 {
     "name": "TicketBAI - API",
-    "version": "16.0.1.0.4",
+    "version": "16.0.1.0.7",
     "category": "Accounting & Finance",
     "website": "https://github.com/OCA/l10n-spain",
     "author": "Binovo," "Odoo Community Association (OCA)",
@@ -14,7 +14,7 @@
     "auto_install": False,
     "development_status": "Beta",
     "maintainers": ["ao-landoo"],
-    "depends": ["base", "base_setup"],
+    "depends": ["base", "base_setup", "l10n_es_aeat"],
     "external_dependencies": {
         "python": [
             "qrcode",
@@ -27,6 +27,7 @@
         "security/l10n_es_ticketbai_security.xml",
         "data/tax_agency_data.xml",
         "data/ticketbai_invoice.xml",
+        "views/aeat_tax_agency_views.xml",
         "views/l10n_es_ticketbai_api_views.xml",
         "views/res_company_views.xml",
         "views/res_config_settings_views.xml",

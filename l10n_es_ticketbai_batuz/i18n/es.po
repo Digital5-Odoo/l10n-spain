@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-01-13 09:00+0000\n"
-"PO-Revision-Date: 2023-09-03 07:57+0000\n"
+"POT-Creation-Date: 2024-09-13 10:15+0000\n"
+"PO-Revision-Date: 2024-09-13 12:16+0200\n"
 "Last-Translator: Ivorra78 <informatica@totmaterial.es>\n"
 "Language-Team: \n"
 "Language: es\n"
@@ -75,16 +75,6 @@ msgstr ""
 "cuando se valida"
 
 #. module: l10n_es_ticketbai_batuz
-#: model:ir.model.fields,help:l10n_es_ticketbai_batuz.field_res_partner__lroe_simplified_invoice
-#: model:ir.model.fields,help:l10n_es_ticketbai_batuz.field_res_users__lroe_simplified_invoice
-msgid ""
-"Checking this mark, invoices done to this partner will be sent to LROE as "
-"simplified invoices."
-msgstr ""
-"Marcando esta casilla, las facturas realizadas a esta empresa serán enviadas "
-"al LROE como facturas simplificadas."
-
-#. module: l10n_es_ticketbai_batuz
 #: model:ir.model,name:l10n_es_ticketbai_batuz.model_res_company
 msgid "Companies"
 msgstr "Compañias"
@@ -98,11 +88,6 @@ msgstr "Trabajos del conector"
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_batuz.view_company_form_inherit_batuz
 msgid "Connector config"
 msgstr "Configuración de conector"
-
-#. module: l10n_es_ticketbai_batuz
-#: model:ir.model,name:l10n_es_ticketbai_batuz.model_res_partner
-msgid "Contact"
-msgstr "Contacto"
 
 #. module: l10n_es_ticketbai_batuz
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_res_company__delay_time
@@ -347,12 +332,6 @@ msgid "Sent Time"
 msgstr "Tiempo de envío"
 
 #. module: l10n_es_ticketbai_batuz
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_res_partner__lroe_simplified_invoice
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_res_users__lroe_simplified_invoice
-msgid "Simplified invoices in LROE?"
-msgstr "¿Facturas simplificadas en el LROE?"
-
-#. module: l10n_es_ticketbai_batuz
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_batuz.field_account_move_reversal__batuz_supplier_invoice_number
 msgid "Supplier Invoice Number"
 msgstr "Referencia de proveedor"
@@ -470,33 +449,9 @@ msgstr ""
 "¡En este momento no puede poner en borrador esta factura porque hay un "
 "trabajo ejecutándose!"
 
-#~ msgid "Credit Note"
-#~ msgstr "Rectificativa"
-
-#~ msgid "Delay time"
-#~ msgstr "Tiempo de retardo"
-
-#~ msgid "Invoice"
-#~ msgstr "Factura"
-
+#. module: l10n_es_ticketbai_batuz
+#. odoo-python
+#: code:addons/l10n_es_ticketbai_batuz/models/account_move.py:0
 #, python-format
-#~ msgid "LROE Build: method for model %s chapter %s not implemented!"
-#~ msgstr "¡LROE: método para modelo %s capítulo %s no implementado!"
-
-#~ msgid "Responses"
-#~ msgstr "Respuestas"
-
-#~ msgid "Send mode"
-#~ msgstr "Modo de envío"
-
-#~ msgid "Sent time"
-#~ msgstr "Hora de envío"
-
-#~ msgid "Use connector"
-#~ msgstr "Usar conector"
-
-#~ msgid "Templates for Account Chart"
-#~ msgstr "Plantillas de plan contable"
-
-#~ msgid "Journal"
-#~ msgstr "Diario"
+msgid "You can't delete an invoice with LROE operations."
+msgstr "No puede eliminar una factura con operaciones LROE."
