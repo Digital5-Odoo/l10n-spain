@@ -11,12 +11,12 @@
         />
         <field name="arch" type="xml">
             <xpath
-                expr="//page[@name='ticketbai']/group[@name='ticketbai_company_config']/field[@name='tbai_tax_agency_id']"
-                position="after"
+                expr="//page[@name='ticketbai']/group[@name='ticketbai_company_config']/field[@name='tbai_device_serial_number']"
+                position="before"
             >
                 <field
                     name="lroe_model"
-                    attrs="{'invisible': [('tbai_tax_agency_id', '!=', %(l10n_es_ticketbai_api_batuz.tbai_tax_agency_bizkaia)d)]}"
+                    attrs="{'invisible': [('tax_agency_id', '!=', %(l10n_es_aeat.aeat_tax_agency_bizkaia)d)]}"
                 />
             </xpath>
         </field>
