@@ -10,6 +10,8 @@ from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import RefundCod
     RefundType, SiNoType, TicketBaiInvoiceState
 from odoo.addons.l10n_es_ticketbai_api.ticketbai.xml_schema import TicketBaiSchema
 
+from odoo.addons.queue_job.job import job
+
 INVOICE_NUMBER_RE = re.compile(r'^(.*\D)?(\d*)$')
 
 
@@ -397,6 +399,14 @@ class AccountInvoice(models.Model):
             TicketBaiInvoiceState.sent.value == x.tbai_invoice_id.state)
         tbai_invoices._tbai_invoice_cancel()
         return super().action_cancel()
+    
+    @job(default_channel='root.invoice_process')
+    @api.multi
+    def _job_tbai_build_invoice_and_send(self):
+        self.ensure_one()
+        self._tbai_build_invoice()
+        if self.tbai_invoice_id:
+            self.tbai_invoice_id.send_pending_invoices()
 
     @api.multi
     def _set_invoice_date_today(self):
@@ -471,7 +481,10 @@ class AccountInvoice(models.Model):
 
         validate_refund_invoices()
         tbai_invoices |= refund_invoices
-        tbai_invoices._tbai_build_invoice()
+        # Creamos tbai_invoice individuales para que se gestionen correctamente los errores
+        # y encadenamiento. IMPORTANTE: Solo un cron a la vez (root.invoice_process), un channel en el conf.
+        for tbai_invoice in tbai_invoices:
+            new_delay = tbai_invoice.with_delay()._job_tbai_build_invoice_and_send()
         return res
 
     @api.model
