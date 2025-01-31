@@ -471,48 +471,29 @@ class L10nEsAeatMod303Report(models.Model):
     @api.multi
     def calculate(self):
         res = super(L10nEsAeatMod303Report, self).calculate()
-        self.cuota_compensar = 0
         for mod303 in self:
-            prev_reports = self.search(
-                [("date_start", "<", mod303.date_start)]
-            ).filtered(lambda m: m.state not in ["draft", "cancelled"])
-            if prev_reports:
-                prev_report = min(
-                    prev_reports,
-                    key=lambda x: abs(
-                        fields.Date.from_string(x.date_end)
-                        - fields.Date.from_string(mod303.date_start)
-                    ),
-                )
-                if prev_report and (
-                    prev_report.remaining_cuota_compensar > 0
-                    or prev_report.result_type == "C"
-                ):
-                    mod303.write(
-                        {
-                            "potential_cuota_compensar": (
-                                prev_report.remaining_cuota_compensar
-                                - prev_report.resultado_liquidacion
-                            ),
-                        }
-                    )
-            if mod303.return_last_period:
-                cuota_compensar = mod303.potential_cuota_compensar
-            elif (
-                float_compare(
-                    mod303.resultado_liquidacion,
-                    0,
-                    precision_digits=mod303.currency_id.decimal_places,
-                )
-                != -1
-            ):
-                cuota_compensar = min(
-                    mod303.potential_cuota_compensar, mod303.resultado_liquidacion
-                )
-            else:
-                cuota_compensar = 0
-            mod303.cuota_compensar = cuota_compensar
-
+            vals = {
+                "counterpart_account_id": self.env['account.account'].search([
+                    ('code', '=like', '%s%%' % _ACCOUNT_PATTERN_MAP.get(
+                        mod303.result_type, '4750')),
+                    ('company_id', '=', mod303.company_id.id),
+                ], limit=1).id,
+            }
+            prev_reports = mod303._get_previous_fiscalyear_reports(
+                mod303.date_start
+            ).filtered(lambda x: x.state not in ['draft', 'cancelled'])
+            if not prev_reports:
+                continue
+            prev_report = min(
+                prev_reports, key=lambda x: abs(
+                    fields.Date.from_string(x.date_end) -
+                    fields.Date.from_string(mod303.date_start)
+                ),
+            )
+            if prev_report.result_type == 'C':
+                vals["cuota_compensar"] = abs(prev_report.resultado_liquidacion)
+                vals["potential_cuota_compensar"] = vals["cuota_compensar"]
+            mod303.write(vals)
         return res
 
     @api.multi
