@@ -5,6 +5,7 @@ from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import RefundTyp
 from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice_tax import \
     NotSubjectToCause, TicketBaiTaxType
 from odoo import models, fields, exceptions, _
+from odoo.tools import float_is_zero
 
 
 class AccountInvoiceTax(models.Model):
@@ -140,6 +141,10 @@ class AccountInvoiceTax(models.Model):
         else:
             sign = 1
         amount_total = self.tbai_get_amount_total_company()
+        if float_is_zero(
+            amount_total, precision_rounding=self.invoice_id.currency_id.rounding
+        ):
+            return "%.2f" % (amount_total)
         return "%.2f" % (sign * amount_total)
 
     def tbai_get_value_tipo_recargo_equivalencia(self):
