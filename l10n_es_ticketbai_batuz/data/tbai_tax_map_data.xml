@@ -21,6 +21,8 @@
             ref('l10n_es.account_tax_template_p_iva0_ns'),
             ref('l10n_es.account_tax_template_p_iva0_ns_b'),
             ref('l10n_es.account_tax_template_p_iva5_sc'),
+            ref('l10n_es.account_tax_template_p_iva0_ic_sc'),
+            ref('l10n_es.account_tax_template_p_iva0_s_sc'),
         ])]"
         />
         <field name="name">Facturas Recibidas Servicios</field>
@@ -36,12 +38,15 @@
             ref('l10n_es.account_tax_template_p_iva10_bc'),
             ref('l10n_es.account_tax_template_p_iva4_bc'),
             ref('l10n_es.account_tax_template_p_iva0_bc'),
+            ref('l10n_es.account_tax_template_p_iva0_s_bc'),
             ref('l10n_es.account_tax_template_p_iva21_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva10_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva4_ic_bc'),
+            ref('l10n_es.account_tax_template_p_iva0_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva21_ibc'),
             ref('l10n_es.account_tax_template_p_iva10_ibc'),
             ref('l10n_es.account_tax_template_p_iva4_ibc'),
+            ref('l10n_es.account_tax_template_p_iva0_ibc'),
         ])]"
         />
         <field name="name">Facturas Recibidas Bienes Corrientes</field>
@@ -88,6 +93,7 @@
             ref('l10n_es.account_tax_template_p_iva21_sp_ex'),
             ref('l10n_es.account_tax_template_p_iva10_sp_ex'),
             ref('l10n_es.account_tax_template_p_iva4_sp_ex'),
+            ref('l10n_es.account_tax_template_p_iva0_isc'),
         ])]"
         />
         <field name="name">Facturas Recibidas ISP</field>
@@ -155,9 +161,11 @@
             ref('l10n_es.account_tax_template_p_iva21_sp_ex'),
             ref('l10n_es.account_tax_template_p_iva10_sp_ex'),
             ref('l10n_es.account_tax_template_p_iva4_sp_ex'),
+            ref('l10n_es.account_tax_template_p_iva0_isc'),
             ref('l10n_es.account_tax_template_p_iva4_sp_in'),
             ref('l10n_es.account_tax_template_p_iva10_sp_in'),
             ref('l10n_es.account_tax_template_p_iva21_sp_in'),
+            ref('l10n_es.account_tax_template_p_iva0_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva4_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva10_ic_bc'),
             ref('l10n_es.account_tax_template_p_iva21_ic_bc'),

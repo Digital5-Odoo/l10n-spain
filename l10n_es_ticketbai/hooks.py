@@ -4,11 +4,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import SUPERUSER_ID, api
 
-from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import (
-    RefundCode,
-    RefundType,
-)
-
 
 def post_init_hook(cr, registry):
     env = api.Environment(cr, SUPERUSER_ID, {})
@@ -84,5 +79,5 @@ def post_init_hook(cr, registry):
         )
 
         if invoice.move_type == "out_refund":
-            invoice.tbai_refund_key = RefundCode.R1.value
-            invoice.tbai_refund_type = RefundType.differences.value
+            invoice.tbai_refund_key = "R1"
+            invoice.tbai_refund_type = "I"

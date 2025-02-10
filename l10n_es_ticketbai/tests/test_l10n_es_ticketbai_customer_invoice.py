@@ -370,7 +370,7 @@ class TestL10nEsTicketBAICustomerInvoice(TestL10nEsTicketBAI):
         invoice.action_post()
         self.assertEqual(invoice.state, "posted")
         self.assertEqual(1, len(invoice.tbai_invoice_ids))
-        invoice.tbai_cancellation_id = invoice.tbai_invoice_ids
+        invoice.tbai_invoice_id.write({"schema": "AnulaTicketBai"})
         # Create an invoice refund by differences
         account_move_reversal = (
             self.env["account.move.reversal"]
