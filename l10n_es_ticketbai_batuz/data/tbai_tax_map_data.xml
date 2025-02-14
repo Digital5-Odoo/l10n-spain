@@ -22,6 +22,7 @@
             ref('l10n_es.account_tax_template_p_iva0_ns_b'),
             ref('l10n_es.account_tax_template_p_iva5_sc'),
             ref('l10n_es.account_tax_template_p_iva0_isc'),
+            ref('l10n_es.account_tax_template_p_iva0_s_sc'),
         ])]"
         />
         <field name="name">Facturas Recibidas Servicios</field>
@@ -44,6 +45,7 @@
             ref('l10n_es.account_tax_template_p_iva10_ibc'),
             ref('l10n_es.account_tax_template_p_iva4_ibc'),
             ref('l10n_es.account_tax_template_p_iva0_ibc'),
+            ref('l10n_es.account_tax_template_p_iva0_s_bc'),
         ])]"
         />
         <field name="name">Facturas Recibidas Bienes Corrientes</field>
