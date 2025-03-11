@@ -57,6 +57,22 @@ odoo.define("l10n_es_ticketbai_pos.PaymentScreen", function (require) {
                     return super._postPushOrderResolve(...arguments);
                 }
             }
+            toggleIsToInvoice() {
+                // Click_invoice
+                if (
+                    !this.currentOrder.is_to_invoice() &&
+                    this.currentOrder.get_total_with_tax() < 0
+                ) {
+                    this.showPopup("ErrorPopup", {
+                        title: this.env._t("TicketBAI"),
+                        body: this.env._t(
+                            "No se puede hacer una factura rectificativa (negativa) sin especificar la factura original. Deberías hacer la factura desde el backend (desde Contabilidad)."
+                        ),
+                    });
+                } else {
+                    super.toggleIsToInvoice(...arguments);
+                }
+            }
         };
 
     Registries.Component.extend(PaymentScreen, L10nEsTicketBaiPaymentScreen);
