@@ -18,6 +18,7 @@
     "data": [
         "data/l10n_es_aeat_map_tax_line.xml",
         "data/2023/l10n_es_aeat_map_tax_line.xml",
+        "data/2024-10/l10n_es_aeat_map_tax_line.xml",
     ],
     "autoinstall": True,
 }
