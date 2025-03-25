@@ -216,7 +216,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
                     ] = fiscal_position.tbai_vat_regime_key3.id
                 if "name" in vals and vals["name"]:
                     vals["tbai_description_operation"] = vals["name"]
-        return super().create(vals_list)
+        return super().create(vals)
 
     @api.depends(
         "tbai_invoice_ids",
