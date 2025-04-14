@@ -824,7 +824,7 @@ class AccountMove(models.Model):
         lroe_invoices = self.sudo().filtered(
             lambda x: x.tbai_enabled
             and x.tbai_send_invoice
-            and x.lroe_state not in ("error")
+            and x.lroe_state not in ("error", "not_sent")
             and (
                 x.move_type == "in_invoice"
                 or (
