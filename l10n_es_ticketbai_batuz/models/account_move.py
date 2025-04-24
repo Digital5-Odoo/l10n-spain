@@ -784,6 +784,8 @@ class AccountMove(models.Model):
                 "recorded",
                 "recorded_modified",
                 "cancel_modified",
+            ) or lroe_invoice.lroe_operation_ids.filtered(
+                lambda x: x.state == "recorded"
             ):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
             elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
@@ -877,6 +879,8 @@ class AccountMove(models.Model):
                 "recorded",
                 "recorded_modified",
                 "cancel_modified",
+            ) or lroe_invoice.lroe_operation_ids.filtered(
+                lambda x: x.state == "recorded"
             ):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
             elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
