@@ -19,11 +19,6 @@ from ..lroe.lroe_xml_schema import (
 )
 
 
-class LROEModelEnum(Enum):
-    model_pj_240 = "240"
-    model_pf_140 = "140"
-
-
 class LROEChapterEnum(Enum):
     chapter_pj_240 = "1"
     chapter_pj_240_full = "1- Facturas emitidas"
@@ -114,25 +109,6 @@ class LROEChapterEnum(Enum):
     subchapter_pf_140_8_2_full = "8.2 - Baja de agrupaciones de bienes"
 
 
-class LROEOperationEnum(Enum):
-    create = "A00"
-    cancel = "AN0"
-    update = "M00"
-    query = "C00"
-
-
-class LROEOperationStateEnum(Enum):
-    DRAFT = "draft"
-    ERROR = "error"
-    CANCEL = "cancel"
-    RECORDED_WARNING = "recorded_warning"
-    RECORDED = "recorded"
-
-
-class LROEOperationVersion(Enum):
-    v1 = "1.0"
-
-
 class LROEChapter(models.Model):
     _name = "lroe.chapter"
     _description = "LROE Chapter"
@@ -142,12 +118,12 @@ class LROEChapter(models.Model):
     code = fields.Char(required=True)
     model = fields.Selection(
         [
-            (LROEModelEnum.model_pj_240.value, "LROE PJ 240"),
-            (LROEModelEnum.model_pf_140.value, "LROE PF 140"),
+            ("240", "LROE PJ 240"),
+            ("140", "LROE PF 140"),
         ],
         string="LROE Model",
         required=True,
-        default=LROEModelEnum.model_pj_240.value,
+        default="240",
     )
     lroe_chapter_id = fields.Many2one(
         comodel_name="lroe.chapter", string="Parent chapter"
@@ -163,26 +139,26 @@ class LROEOperation(models.Model):
     company_id = fields.Many2one("res.company", required=True)
     type = fields.Selection(
         [
-            (LROEOperationEnum.create.value, "Create"),
-            (LROEOperationEnum.cancel.value, "Cancel"),
-            (LROEOperationEnum.update.value, "Update"),
-            (LROEOperationEnum.query.value, "Query"),
+            ("A00", "Create"),
+            ("AN0", "Cancel"),
+            ("M00", "Update"),
+            ("C00", "Query"),
         ],
         required=True,
-        default=LROEOperationEnum.create.value,
+        default="A00",
     )
     model = fields.Selection(
         related="company_id.lroe_model", readonly=True, required=True
     )
     state = fields.Selection(
         selection=[
-            (LROEOperationStateEnum.DRAFT.value, "Draft"),
-            (LROEOperationStateEnum.ERROR.value, "Error"),
-            (LROEOperationStateEnum.CANCEL.value, "Cancel"),
-            (LROEOperationStateEnum.RECORDED_WARNING.value, "Recorded Warning"),
-            (LROEOperationStateEnum.RECORDED.value, "Recorded"),
+            ("draft", "Draft"),
+            ("error", "Error"),
+            ("cancel", "Cancel"),
+            ("recorded_warning", "Recorded Warning"),
+            ("recorded", "Recorded"),
         ],
-        default=LROEOperationStateEnum.DRAFT.value,
+        default="draft",
     )
     tbai_invoice_ids = fields.One2many(
         comodel_name="tbai.invoice",
@@ -216,19 +192,19 @@ class LROEOperation(models.Model):
     def _get_printed_report_name(self):
         self.ensure_one()
         report_name = self.model + "_" + self.type + "_" + str(self.id)
-        if self.model == LROEModelEnum.model_pj_240.value:
-            if self.type == LROEOperationEnum.create.value:
+        if self.model == "240":
+            if self.type == "A00":
                 report_name = _("LROE_model_pj_240_create") + "_" + str(self.id)
-            elif self.type == LROEOperationEnum.cancel.value:
+            elif self.type == "AN0":
                 report_name = _("LROE_model_pj_240_cancel") + "_" + str(self.id)
-            elif self.type == LROEOperationEnum.update.value:
+            elif self.type == "M00":
                 report_name = _("LROE_model_pj_240_update") + "_" + str(self.id)
-        elif self.model == LROEModelEnum.model_pf_140.value:
-            if self.type == LROEOperationEnum.create.value:
+        elif self.model == "140":
+            if self.type == "A00":
                 report_name = _("LROE_model_pf_140_create") + "_" + str(self.id)
-            elif self.type == LROEOperationEnum.cancel.value:
+            elif self.type == "AN0":
                 report_name = _("LROE_model_pf_140_cancel") + "_" + str(self.id)
-            elif self.type == LROEOperationEnum.update.value:
+            elif self.type == "M00":
                 report_name = _("LROE_model_pf_140_update") + "_" + str(self.id)
         return report_name
 
@@ -258,7 +234,7 @@ class LROEOperation(models.Model):
         self.ensure_one()
         ingresos = []
         if self.tbai_invoice_ids:
-            if self.type == LROEOperationEnum.create.value:
+            if self.type == "A00":
                 for tbai_customer_invoice_id in self.tbai_invoice_ids:
                     ingresos.append(
                         OrderedDict(
@@ -268,7 +244,7 @@ class LROEOperation(models.Model):
                             ]
                         )
                     )
-            elif self.type == LROEOperationEnum.cancel.value:
+            elif self.type == "AN0":
                 for tbai_customer_cancel_id in self.tbai_invoice_ids:
                     ingresos.append(
                         OrderedDict(
@@ -281,12 +257,12 @@ class LROEOperation(models.Model):
         self.ensure_one()
         facturas_emitidas = []
         if self.tbai_invoice_ids:
-            if self.type == LROEOperationEnum.create.value:
+            if self.type == "A00":
                 for tbai_customer_invoice_id in self.tbai_invoice_ids:
                     facturas_emitidas.append(
                         OrderedDict([("TicketBai", tbai_customer_invoice_id.datas)])
                     )
-            elif self.type == LROEOperationEnum.cancel.value:
+            elif self.type == "AN0":
                 for tbai_customer_cancel_id in self.tbai_invoice_ids:
                     facturas_emitidas.append(
                         OrderedDict(
@@ -328,13 +304,13 @@ class LROEOperation(models.Model):
     def build_cabecera_pj_240(self):
         self.ensure_one()
         cabecera = OrderedDict()
-        cabecera["Modelo"] = LROEModelEnum.model_pj_240.value
+        cabecera["Modelo"] = "240"
         cabecera["Capitulo"] = self.lroe_chapter_id.code
         if self.lroe_subchapter_id.code:
             # Si se informa de subcapitulo vacío hacienda devuelve error B4_1000001
             cabecera["Subcapitulo"] = self.lroe_subchapter_id.code
         cabecera["Operacion"] = self.type
-        cabecera["Version"] = LROEOperationVersion.v1.value
+        cabecera["Version"] = "1.0"
         cabecera["Ejercicio"] = self.build_cabecera_ejercicio()
         cabecera["ObligadoTributario"] = self.build_obligado_tributario()
         return cabecera
@@ -342,13 +318,13 @@ class LROEOperation(models.Model):
     def build_cabecera_pf_140(self):
         self.ensure_one()
         cabecera = OrderedDict()
-        cabecera["Modelo"] = LROEModelEnum.model_pf_140.value
+        cabecera["Modelo"] = "140"
         cabecera["Capitulo"] = self.lroe_chapter_id.code
         if self.lroe_subchapter_id.code:
             # Si se informa de subcapitulo vacío hacienda devuelve error B4_1000001
             cabecera["Subcapitulo"] = self.lroe_subchapter_id.code
         cabecera["Operacion"] = self.type
-        cabecera["Version"] = LROEOperationVersion.v1.value
+        cabecera["Version"] = "1.0"
         cabecera["Ejercicio"] = self.build_cabecera_ejercicio()
         cabecera["ObligadoTributario"] = self.build_obligado_tributario()
         return cabecera
@@ -357,11 +333,11 @@ class LROEOperation(models.Model):
         self.ensure_one()
         res_dict = {}
         if self.type in (
-            LROEOperationEnum.create.value,
-            LROEOperationEnum.update.value,
+            "A00",
+            "M00",
         ):
             lroe_type_enum = LROEOperationTypeEnum.alta_sg_invoice_pj_240.value
-        elif self.type == LROEOperationEnum.cancel.value:
+        elif self.type == "AN0":
             lroe_type_enum = LROEOperationTypeEnum.cancel_sg_invoice_pj_240.value
         lroe_xml_schema = LROEXMLSchema(lroe_type_enum)
         if lroe_xml_schema:
@@ -379,11 +355,11 @@ class LROEOperation(models.Model):
         self.ensure_one()
         res_dict = {}
         if self.type in (
-            LROEOperationEnum.create.value,
-            LROEOperationEnum.update.value,
+            "A00",
+            "M00",
         ):
             lroe_type_enum = LROEOperationTypeEnum.alta_sg_invoice_pf_140.value
-        elif self.type == LROEOperationEnum.cancel.value:
+        elif self.type == "AN0":
             lroe_type_enum = LROEOperationTypeEnum.cancel_sg_invoice_pf_140.value
         lroe_xml_schema = LROEXMLSchema(lroe_type_enum)
         if lroe_xml_schema:
@@ -404,8 +380,8 @@ class LROEOperation(models.Model):
             lambda ai: ai.move_type in ("in_invoice", "in_refund")
         ):
             if self.type in (
-                LROEOperationEnum.create.value,
-                LROEOperationEnum.update.value,
+                "A00",
+                "M00",
             ):
                 for invoice in self.invoice_ids:
                     facturas_recibidas.append(
@@ -413,7 +389,7 @@ class LROEOperation(models.Model):
                             invoice.lroe_invoice_dict, object_pairs_hook=OrderedDict
                         )
                     )
-            elif self.type == LROEOperationEnum.cancel.value:
+            elif self.type == "AN0":
                 for invoice in self.invoice_ids:
                     facturas_recibidas.append(
                         json.loads(
@@ -426,11 +402,11 @@ class LROEOperation(models.Model):
         self.ensure_one()
         res_dict = {}
         if self.type in (
-            LROEOperationEnum.create.value,
-            LROEOperationEnum.update.value,
+            "A00",
+            "M00",
         ):
             lroe_type_enum = LROEOperationTypeEnum.alta_invoice_in_pf_140.value
-        elif self.type == LROEOperationEnum.cancel.value:
+        elif self.type == "AN0":
             lroe_type_enum = LROEOperationTypeEnum.cancel_invoice_in_pf_140.value
         lroe_xml_schema = LROEXMLSchema(lroe_type_enum)
         if lroe_xml_schema:
@@ -448,11 +424,11 @@ class LROEOperation(models.Model):
         self.ensure_one()
         res_dict = {}
         if self.type in (
-            LROEOperationEnum.create.value,
-            LROEOperationEnum.update.value,
+            "A00",
+            "M00",
         ):
             lroe_type_enum = LROEOperationTypeEnum.alta_invoice_in_pj_240.value
-        elif self.type == LROEOperationEnum.cancel.value:
+        elif self.type == "AN0":
             lroe_type_enum = LROEOperationTypeEnum.cancel_invoice_in_pj_240.value
         lroe_xml_schema = LROEXMLSchema(lroe_type_enum)
         if lroe_xml_schema:
@@ -504,4 +480,4 @@ class LROEOperation(models.Model):
         self.xml_datas = base64.b64encode(root_str)
         self.xml_datas_fname = self._get_printed_report_name() + ".xml"
         self.xml_file_size = len(root_str)
-        self.state = LROEOperationStateEnum.DRAFT.value
+        self.state = "draft"
