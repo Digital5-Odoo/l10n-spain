@@ -121,7 +121,7 @@ class AccountMove(models.Model):
         bizkaia_tax_agency = self.env.ref("l10n_es_aeat.aeat_tax_agency_bizkaia")
         for vals in vals_list:
             company = self.env["res.company"].browse(
-                vals.get("company_id", self.env.user.company_id.id)
+                vals.get("company_id", self.env.company.id)
             )
             tax_agency_id = company.tax_agency_id
             if (
