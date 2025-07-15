@@ -10,8 +10,10 @@ class AccountTax(models.Model):
         s_iva_ns_tbai_maps = self.env["tbai.tax.map"].search(
             [('code', 'in', ("SNS", "BNS"))]
         )
-        s_iva_ns_taxes = self.env["l10n.es.aeat.report"].get_taxes_from_templates(
-            s_iva_ns_tbai_maps.mapped("tax_template_ids")
+        s_iva_ns_taxes = self.env["l10n.es.aeat.report"].new(
+                        {'company_id': self.company_id.id}
+        ).get_taxes_from_templates(
+                s_iva_ns_tbai_maps.mapped("tax_template_ids")
         )
         return self not in s_iva_ns_taxes
 
