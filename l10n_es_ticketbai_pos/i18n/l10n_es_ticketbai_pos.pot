@@ -6,6 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-13 12:07+0000\n"
+"PO-Revision-Date: 2024-09-13 12:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -14,47 +16,36 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid ""
-"<i class=\"fa fa-info-circle me-1 oe_inline\" title=\"PoS Device Serial "
-"Number. As of TicketBAI v1.1, is not required.\" pos-data-"
-"toggle=\"tooltip\"/>"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid ""
-"<i class=\"fa fa-info-circle me-1 oe_inline\" title=\"TicketBAI Certificate "
-"(optional). If not set, the certificate from the company is used instead.\" "
-"pos-data-toggle=\"tooltip\"/>"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid "<span class=\"o_form_label\">TicketBAI</span>"
+#. odoo-javascript
+#: code:addons/l10n_es_ticketbai_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#, python-format
+msgid "Anonymous customer"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen.js:0
 #, python-format
 msgid "At least one product does not have a tax."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid "Certificate"
+#: model:ir.model.fields,help:l10n_es_ticketbai_pos.field_pos_order__tbai_refund_key
+msgid ""
+"BOE-A-1992-28740. Ley 37/1992, de 28 de diciembre, del Impuesto sobre el "
+"Valor Añadido. Artículo 80. Modificación de la base imponible."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model,name:l10n_es_ticketbai_pos.model_res_config_settings
-msgid "Config Settings"
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__company_id
+msgid "Company"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_config__tbai_device_serial_number
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid "Device Serial Number"
+#. odoo-python
+#: code:addons/l10n_es_ticketbai_pos/models/pos_config.py:0
+#, python-format
+msgid "Default customer is required with TicketBAI enabled"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
@@ -69,20 +60,23 @@ msgid "Files Sent"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
+#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.view_pos_pos_form_inherit
+msgid "General"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
 #: model:ir.model,name:l10n_es_ticketbai_pos.model_account_move
 msgid "Journal Entry"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_config__tbai_last_invoice_id
-msgid "Last TicketBAI Invoice sent"
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_invoice_id
+msgid "Last TicketBAI Invoice"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,help:l10n_es_ticketbai_pos.field_account_bank_statement_line__tbai_substitution_pos_order_id
-#: model:ir.model.fields,help:l10n_es_ticketbai_pos.field_account_move__tbai_substitution_pos_order_id
-#: model:ir.model.fields,help:l10n_es_ticketbai_pos.field_account_payment__tbai_substitution_pos_order_id
-msgid "Link between a validated Customer Invoice and its substitute."
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_config__tbai_last_invoice_id
+msgid "Last TicketBAI Invoice sent"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
@@ -92,49 +86,45 @@ msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
 #, python-format
 msgid "Non spanish customers are not supported for Simplified Invoice."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.view_pos_pos_form_inherit
-msgid "Orders"
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_date_operation
+msgid "Operation Date"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_description_operation
+msgid "Operation Description"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/xml/pos.xml:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/xml/OrderReceipt.xml:0
 #, python-format
 msgid "PRO FORMA"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/xml/OrderReceipt.xml:0
 #, python-format
-msgid "Please set Company VAT."
+msgid "Pendiente de validación TicketBAI debido a problemas de conexión."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
 #, python-format
-msgid "Please set Country for customer %s."
+msgid "Please set Country for customer %s or mark as anonymous cash customer."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#, python-format
-msgid ""
-"Please set VAT Regime Key for fiscal position ${order.fiscal_position.name}."
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
 #, python-format
 msgid ""
 "Please set VAT or TicketBAI Partner Identification Number for customer %s."
@@ -142,32 +132,19 @@ msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/ProductScreen.js:0
 #, python-format
-msgid ""
-"Please set VAT or TicketBAI Partner Identification Number for customer."
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
-#, python-format
-msgid "Please set a tax for product ${product.display_names}."
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.res_config_settings_view_form
-msgid "PoS TicketBAI Configuration"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_res_config_settings__pos_tbai_device_serial_number
-msgid "PoS TicketBAI Device Serial Number"
+msgid "Please set a tax for product %s."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #: model:ir.model,name:l10n_es_ticketbai_pos.model_pos_config
 msgid "Point of Sale Configuration"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model,name:l10n_es_ticketbai_pos.model_pos_order_line
+msgid "Point of Sale Order Lines"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
@@ -186,13 +163,27 @@ msgid "Pos Order"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_qr_src
+msgid "QR source"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_response_ids
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.view_pos_pos_form_inherit
 msgid "Responses"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
+#. odoo-javascript
+#: code:addons/l10n_es_ticketbai_pos/static/src/xml/OrderReceipt.xml:0
+#, python-format
+msgid ""
+"Si desea copia del ticket definitivo, póngase en contacto con nosotros."
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
 #. odoo-python
+#: code:addons/l10n_es_ticketbai_pos/models/pos_config.py:0
 #: code:addons/l10n_es_ticketbai_pos/models/pos_config.py:0
 #, python-format
 msgid "Simplified Invoice IDs Sequence is required"
@@ -206,42 +197,35 @@ msgid "Simplified Invoice Number Prefix %s is not part of Number %%!"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_account_bank_statement_line__tbai_substitution_pos_order_id
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_account_move__tbai_substitution_pos_order_id
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_account_payment__tbai_substitution_pos_order_id
-msgid "Tbai Substitution Pos Order"
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_identifier
+msgid "TBAI Identifier"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_datetime_invoice
+msgid "Tbai Datetime Invoice"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_refund_key
+msgid "Tbai Refund Key"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_refund_type
+msgid "Tbai Refund Type"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PartnerListScreen/PartnerListScreen.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/ProductScreen/ProductScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/ProductScreen.js:0
 #: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/tbai_models.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
+#: code:addons/l10n_es_ticketbai_pos/static/src/js/models.js:0
 #: model_terms:ir.ui.view,arch_db:l10n_es_ticketbai_pos.view_pos_pos_form_inherit
 #, python-format
 msgid "TicketBAI"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_config__tbai_certificate_id
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_res_config_settings__pos_tbai_certificate_id
-msgid "TicketBAI Certificate"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#: model:ir.ui.menu,name:l10n_es_ticketbai_pos.menu_pos_tbai_certificates
-msgid "TicketBAI Certificates"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#, python-format
-msgid "TicketBAI Invoice not built yet. Please try again."
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
@@ -251,20 +235,23 @@ msgid "TicketBAI Invoices"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
-#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_invoice_id
-msgid "TicketBAI PoS Order"
-msgstr ""
-
-#. module: l10n_es_ticketbai_pos
-#. odoo-javascript
-#: code:addons/l10n_es_ticketbai_pos/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#, python-format
-msgid "TicketBAI certificate not loaded!"
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_refund_origin_ids
+msgid "TicketBAI Refund Origin References"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos
 #: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_config__iface_l10n_es_simplified_invoice
 msgid "Use simplified invoices for this POS"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_vat_regime_key2
+msgid "VAT Regime 2nd Key"
+msgstr ""
+
+#. module: l10n_es_ticketbai_pos
+#: model:ir.model.fields,field_description:l10n_es_ticketbai_pos.field_pos_order__tbai_vat_regime_key3
+msgid "VAT Regime 3rd Key"
 msgstr ""
 
 #. module: l10n_es_ticketbai_pos

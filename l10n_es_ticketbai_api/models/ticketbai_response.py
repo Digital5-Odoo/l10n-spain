@@ -5,49 +5,7 @@ import base64
 
 from odoo import _, api, fields, models
 
-from ..ticketbai.xml_schema import TicketBaiSchema, XMLSchema
-from ..utils import utils as tbai_utils
-
-
-class TicketBaiCancellationResponseCode(tbai_utils.EnumValues):
-    INCORRECT_SENDER_CERTIFICATE = "001"
-    XSD_SCHEMA_NOT_COMPLY = "002"
-    REQUIRED_FIELD_MISSING = "004"
-    SERVICE_NOT_AVAILABLE = "006"
-    INVALID_SENDER_CERTIFICATE = "007"
-    WRONG_SIGNATURE = "008"
-    INVALID_TBAI_LICENSE = "012"
-    DEVICE_NOT_REGISTERED = "013"
-    EXPIRED_SENDER_CERTIFICATE = "015"
-    EXPIRED_SIGNER_CERTIFICATE = "016"
-    MESSAGE_TOO_LONG = "017"
-    INVOICE_NOT_REGISTERED = "018"
-    INVOICE_ALREADY_CANCELLED = "019"
-
-
-class TicketBaiInvoiceResponseCode(tbai_utils.EnumValues):
-    INCORRECT_SENDER_CERTIFICATE = "001"
-    XSD_SCHEMA_NOT_COMPLY = "002"
-    INVOICE_WITHOUT_LINES = "003"
-    REQUIRED_FIELD_MISSING = "004"
-    INVOICE_ALREADY_REGISTERED = "005"
-    SERVICE_NOT_AVAILABLE = "006"
-    INVALID_SENDER_CERTIFICATE = "007"
-    WRONG_SIGNATURE = "008"
-    INCORRECT_INVOICE_CHAINING = "010"
-    BUSINESS_VALIDATION_DATA_ERROR = "011"
-    INVALID_TBAI_LICENSE = "012"
-    DEVICE_NOT_REGISTERED = "013"
-    EXPIRED_SENDER_CERTIFICATE = "015"
-    EXPIRED_SIGNER_CERTIFICATE = "016"
-    MESSAGE_TOO_LONG = "017"
-
-
-class TicketBaiResponseState(tbai_utils.EnumValues):
-    BUILD_ERROR = "-2"
-    REQUEST_ERROR = "-1"
-    RECEIVED = "00"
-    REJECTED = "01"
+from ..ticketbai.xml_schema import XMLSchema
 
 
 class TicketBaiResponse(models.Model):
@@ -63,10 +21,10 @@ class TicketBaiResponse(models.Model):
     state = fields.Selection(
         string="Status",
         selection=[
-            (TicketBaiResponseState.RECEIVED.value, "Received"),
-            (TicketBaiResponseState.REJECTED.value, "Rejected"),
-            (TicketBaiResponseState.REQUEST_ERROR.value, "Request error"),
-            (TicketBaiResponseState.BUILD_ERROR.value, "Build error"),
+            ("00", "Received"),
+            ("01", "Rejected"),
+            ("-1", "Request error"),
+            ("-2", "Build error"),
         ],
         required=True,
     )
@@ -79,7 +37,7 @@ class TicketBaiResponse(models.Model):
         values = {}
         values.update(
             {
-                "state": TicketBaiResponseState.BUILD_ERROR.value,
+                "state": "-2",
                 "tbai_response_message_ids": [
                     (
                         0,
@@ -102,7 +60,7 @@ class TicketBaiResponse(models.Model):
             strerror = response.strerror
             values.update(
                 {
-                    "state": TicketBaiResponseState.REQUEST_ERROR.value,
+                    "state": "-1",
                     "tbai_response_message_ids": [
                         (0, 0, {"code": errno, "description": strerror})
                     ],
@@ -110,9 +68,9 @@ class TicketBaiResponse(models.Model):
             )
         else:
             xml_dict = (
-                XMLSchema(TicketBaiSchema.TicketBaiResponse.value).parse_xml(
-                    response.data
-                )["TicketBaiResponse"]
+                XMLSchema("TicketBaiResponse").parse_xml(response.data)[
+                    "TicketBaiResponse"
+                ]
                 or {}
             )
             state = xml_dict["Salida"]["Estado"]
@@ -123,7 +81,7 @@ class TicketBaiResponse(models.Model):
                 }
             )
             tbai_response_message_ids = []
-            if state == TicketBaiResponseState.RECEIVED.value:
+            if state == "00":
                 if xml_dict.get("Salida").get("CSV"):
                     tbai_response_message_ids = [
                         (
@@ -156,7 +114,7 @@ class TicketBaiResponse(models.Model):
                                 },
                             )
                         )
-            elif state == TicketBaiResponseState.REJECTED.value:
+            elif state == "01":
                 messages = xml_dict["Salida"]["ResultadosValidacion"]
                 if isinstance(messages, dict):
                     messages = [messages]
