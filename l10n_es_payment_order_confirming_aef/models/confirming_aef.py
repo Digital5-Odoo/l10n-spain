@@ -4,6 +4,8 @@
 from odoo import _, fields
 from odoo.exceptions import UserError
 
+from odoo.addons.phone_validation.tools import phone_validation
+
 try:
     from unidecode import unidecode
 except ImportError:
@@ -65,6 +67,27 @@ class ConfirmingAEF(object):
                     _("- El proveedor %s no tiene establecido el país.")
                     % line.partner_id.name
                 )
+            # Teléfono
+            if not line.partner_id.phone:
+                validation_errors.append(
+                    _("- El proveedor %s no tiene teléfono establecido.")
+                    % line.partner_id.name
+                )
+            else:
+                formated_phone = phone_validation.phone_format(
+                    line.partner_id.phone,
+                    line.partner_id.country_id.code,
+                    line.partner_id.country_id.phone_code,
+                    force_format="E164",
+                    raise_exception=False,
+                )
+                if not formated_phone.replace("+", "").isdigit():
+                    validation_errors.append(
+                        _(
+                            "- El teléfono del proveedor %s no está en un formato válido."
+                        )
+                        % line.partner_id.name
+                    )
             # SWIFT
             if not line.partner_bank_id.bank_bic:
                 validation_errors.append(
@@ -154,8 +177,16 @@ class ConfirmingAEF(object):
         text += self._aef_convert_text("", 30)
         # 171 - 172 Tipo Formato
         text += "FU"
-        # 173 - 250 Espacios
-        text += self._aef_convert_text("", 77)
+        # 173 - 175 Codigo Divisa cuenta de adeudo
+        text += self._aef_convert_text(
+            self.record.company_partner_bank_id.currency_id.name, 3, "left"
+        )
+        # 176 - 186 BIC de la cuenta de adeudo
+        text += self._aef_convert_text(
+            self.record.company_partner_bank_id.bank_bic, 11, "left"
+        )
+        # 187 - 250 Espacios
+        text += self._aef_convert_text("", 63)
         text += "\r\n"
         return text
 
@@ -210,7 +241,14 @@ class ConfirmingAEF(object):
         # 52 - 101 Email secundario
         text += self._aef_convert_text("", 50)
         # 102 - 116 Teléfono
-        text += self._aef_convert_text("", 15)
+        formated_phone = phone_validation.phone_format(
+            line.partner_id.phone,
+            line.partner_id.country_id.code,
+            line.partner_id.country_id.phone_code,
+            force_format="E164",
+            raise_exception=False,
+        )
+        text += self._aef_convert_text(formated_phone.replace("+", ""), 15, "left")
         # 117 - 131 FAX
         text += self._aef_convert_text("", 15)
         # 132 - 250 Espacios
