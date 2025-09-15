@@ -29,5 +29,6 @@
         "data/lroe_chapter_data.xml",
         "views/res_company_views.xml",
         "views/lroe_operation_views.xml",
+        "views/ticketbai_invoice_views.xml",
     ],
 }

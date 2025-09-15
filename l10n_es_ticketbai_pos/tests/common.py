@@ -56,10 +56,17 @@ class TestL10nEsTicketBAIPoSCommon(TestL10nEsTicketBAI):
                             0,
                             0,
                             {
-                                "account_id": user.partner_id.property_account_receivable_id.id,  # noqa: B950
+                                "account_id": user.partner_id.property_account_receivable_id.id,
                                 "amount": untax + atax,
                                 "name": fields.Datetime.now(),
-                                "payment_method_id": self.cash_payment_method.id,
+                                "payment_method_id": self.env.ref(
+                                    "account.account_payment_method_manual_out"
+                                ).id,
+                                "statement_id": (
+                                    self.pos_config.current_session_id.statement_ids[
+                                        0
+                                    ].id
+                                ),
                             },
                         ]
                     ],
@@ -122,10 +129,17 @@ class TestL10nEsTicketBAIPoSCommon(TestL10nEsTicketBAI):
                             0,
                             0,
                             {
-                                "account_id": user.partner_id.property_account_receivable_id.id,  # noqa: B950
+                                "account_id": user.partner_id.property_account_receivable_id.id,
                                 "amount": untax + atax,
                                 "name": fields.Datetime.now(),
-                                "payment_method_id": self.cash_payment_method.id,
+                                "payment_method_id": self.env.ref(
+                                    "account.account_payment_method_manual_out"
+                                ).id,
+                                "statement_id": (
+                                    self.pos_config.current_session_id.statement_ids[
+                                        0
+                                    ].id
+                                ),
                             },
                         ]
                     ],
@@ -195,26 +209,3 @@ class TestL10nEsTicketBAIPoSCommon(TestL10nEsTicketBAI):
         self.account_billing.groups_id = [
             (4, self.env.ref("point_of_sale.group_pos_user").id)
         ]
-
-        account_id = self.env.company.account_default_pos_receivable_account_id
-        self.cash_payment_method = self.env["pos.payment.method"].create(
-            {
-                "name": "Cash",
-                "is_cash_count": True,
-                "receivable_account_id": account_id.id,
-                "journal_id": self.env["account.journal"]
-                .search(
-                    [("type", "=", "cash"), ("company_id", "=", self.env.company.id)],
-                    limit=1,
-                )
-                .id,
-            }
-        )
-
-        self.pos_config.write(
-            {"payment_method_ids": [(4, self.cash_payment_method.id)]}
-        )
-
-        self.pos_session = self.env["pos.session"].create(
-            {"config_id": self.pos_config.id}
-        )

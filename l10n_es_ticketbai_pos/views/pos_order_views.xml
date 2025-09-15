@@ -13,14 +13,19 @@
                                                     ('tbai_enabled', '=', True)]}
                 </attribute>
             </button>
+            <field name="partner_id" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'readonly':[('tbai_enabled', '=', True)]}</attribute>
+            </field>
             <page name="extra" position="after">
                 <page
                     name="ticketbai"
                     string="TicketBAI"
                     attrs="{'invisible': [('tbai_enabled', '=', False)]}"
                 >
-                    <group name="main_grp" col="4">
-                        <group name="ticketbai" colspan="2" col="2">
+                    <group name="ticketbai">
+                        <group name="ticketbai_general" string="General">
                             <field name="tbai_enabled" invisible="1" />
                             <field
                                 name="tbai_invoice_id"
@@ -28,114 +33,119 @@
                                 options="{'no_create':True}"
                                 attrs="{'invisible': [('tbai_invoice_id', '=', False)]}"
                             />
-                        </group>
-                    </group>
-                    <group name="tbai_vat_regimes" string="VAT Regimes">
-                        <field
-                            name="tbai_vat_regime_key"
-                            readonly="1"
-                            options="{'no_open':True,'no_create':True}"
-                        />
-                    </group>
-                    <group
-                        name="tbai_send"
-                        string="Files Sent"
-                        attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
-                    >
-                        <group
-                            name="tbai_sent_orders"
-                            string="Orders"
-                            colspan="2"
-                            attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
-                        >
-                            <field
-                                name="tbai_invoice_ids"
-                                readonly="1"
-                                colspan="2"
-                                options="{'no_open':True,'no_create':True}"
-                                nolabel="1"
+                                <field
+                                name="tbai_description_operation"
+                                widget="char"
+                                attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"
                             />
                         </group>
+                        <group name="tbai_vat_regimes" string="VAT Regimes">
+                            <field
+                                name="tbai_vat_regime_key"
+                                readonly="1"
+                                options="{'no_open':True,'no_create':True}"
+                            />
+                        </group>
+                    </group>
+                    <group
+                        name="tbai_sent_customer_invoices"
+                        string="Files Sent"
+                        attrs="{'invisible': [('tbai_invoice_ids', '=', [])]}"
+                        colspan="4"
+                    >
+                            <field
+                            name="tbai_invoice_ids"
+                            readonly="1"
+                            options="{'no_open':True,'no_create':True}"
+                            nolabel="1"
+                            colspan="2"
+                        />
                     </group>
                     <group
                         name="tbai_responses"
                         string="Responses"
                         attrs="{'invisible': [('tbai_response_ids', '=', [])]}"
+                        colspan="4"
                     >
-                        <field
+                            <field
                             name="tbai_response_ids"
                             nolabel="1"
-                            colspan="2"
                             options="{'no_create_edit': True}"
+                            colspan="2"
                         >
-                            <form>
-                                <header>
-                                    <field
+                                <form>
+                                    <header>
+                                        <field
                                         name="state"
                                         widget="statusbar"
                                         readonly="1"
                                     />
-                                </header>
-                                <sheet>
-                                    <group name="tbai_response_main_group">
-                                        <field
+                                    </header>
+                                    <sheet>
+                                        <group name="tbai_response_main_group">
+                                            <field
                                             name="xml"
                                             filename="xml_fname"
                                             readonly="1"
                                         />
-                                        <field
+                                            <field
                                             name="xml_fname"
                                             invisible="1"
                                             class="oe_inline oe_right"
                                         />
-                                    </group>
-                                    <group
+                                        </group>
+                                        <group
                                         name="tbai_response_messages_group"
                                         string="Messages"
+                                        cols="4"
                                     >
-                                        <field
+                                            <field
                                             name="tbai_response_message_ids"
                                             nolabel="1"
                                             readonly="1"
+                                            colspan="2"
                                         >
-                                            <form>
-                                                <group>
-                                                    <field
+                                                <form>
+                                                    <group>
+                                                        <field
                                                         name="tbai_response_id"
                                                         invisible="1"
                                                     />
-                                                    <field name="code" readonly="1" />
-                                                    <field
+                                                        <field
+                                                        name="code"
+                                                        readonly="1"
+                                                    />
+                                                        <field
                                                         name="description"
                                                         readonly="1"
                                                     />
-                                                </group>
-                                            </form>
-                                            <tree create="false" delete="false">
-                                                <field
+                                                    </group>
+                                                </form>
+                                                <tree create="false" delete="false">
+                                                    <field
                                                     name="tbai_response_id"
                                                     invisible="1"
                                                 />
-                                                <field name="code" readonly="1" />
-                                                <field
+                                                    <field name="code" readonly="1" />
+                                                    <field
                                                     name="description"
                                                     readonly="1"
                                                 />
-                                            </tree>
-                                        </field>
-                                    </group>
-                                </sheet>
-                            </form>
-                            <tree create="false" delete="false">
-                                <field name="create_date" />
-                                <field
+                                                </tree>
+                                            </field>
+                                        </group>
+                                    </sheet>
+                                </form>
+                                <tree create="false" delete="false">
+                                    <field name="create_date" />
+                                    <field
                                     name="tbai_response_message_ids"
                                     widget="many2many_tags"
                                 />
-                                <field name="state" />
-                            </tree>
-                        </field>
-                    </group>
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </group>
                 </page>
             </page>
         </field>
