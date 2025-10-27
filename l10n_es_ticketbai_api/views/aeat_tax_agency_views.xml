@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html). -->
+<odoo>
+    <record id="aeat_tbai_tax_agency_form_view" model="ir.ui.view">
+        <field name="name">aeat.tax.agency.form - l10n_es_ticketbai_api</field>
+        <field name="model">aeat.tax.agency</field>
+        <field name="inherit_id" ref="l10n_es_aeat.aeat_tax_agency_form_view" />
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page name="tbai" string="TicketBAI/LROE">
+                    <group>
+                        <group string="QR Base">
+                            <field name="tbai_qr_base_url" string="URL" />
+                            <field name="tbai_test_qr_base_url" string="Test URL" />
+                        </group>
+                        <group string="REST API for Invoices">
+                            <field name="tbai_rest_url_invoice" string="URL" />
+                            <field
+                                name="tbai_test_rest_url_invoice"
+                                string="Test URL"
+                            />
+                        </group>
+                        <group string="REST API for Invoice Cancellations">
+                            <field name="tbai_rest_url_cancellation" string="URL" />
+                            <field
+                                name="tbai_test_rest_url_cancellation"
+                                string="Test URL"
+                            />
+                        </group>
+                        <group string="Sign File">
+                            <field name="tbai_sign_file_url" string="URL" />
+                            <field name="tbai_sign_file_hash" string="HASH" />
+                        </group>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>
