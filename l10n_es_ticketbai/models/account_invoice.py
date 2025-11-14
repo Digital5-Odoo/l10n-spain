@@ -1,10 +1,11 @@
 # Copyright 2021 Binovo IT Human Project SL
 # Copyright 2021 Landoo Sistemas de Informacion SL
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 import re
 from odoo import models, fields, exceptions, _, api
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
 from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice import RefundCode, \
     RefundType, SiNoType, TicketBaiInvoiceState
 from odoo.addons.l10n_es_ticketbai_api.ticketbai.xml_schema import TicketBaiSchema
@@ -33,7 +34,6 @@ class AccountInvoice(models.Model):
         string='Responses')
     tbai_datetime_invoice = fields.Datetime(
         compute='_compute_tbai_datetime_invoice', store=True, copy=False)
-    tbai_date_operation = fields.Datetime('Operation Date', copy=False)
     tbai_description_operation = fields.Text(
         'Operation Description', default="/", copy=False)
     tbai_substitute_simplified_invoice = fields.Boolean(
@@ -71,6 +71,43 @@ class AccountInvoice(models.Model):
                 raise exceptions.ValidationError(_(
                     "Invoice %s. You cannot change to draft a numbered invoice!"
                 ) % record.number)
+
+    @api.multi
+    @api.constrains('date', 'date_invoice')
+    def _check_dates(self):
+        """
+        Segun DECRETO FORAL de la Diputación Foral de Bizkaia 4/2013, de 22 de enero,
+          por el que se aprueba el Reglamento por el que se regulan las obligaciones
+          de facturación (BOB 29 Enero): comprobamos el Artículo 11. Plazo para la expedición de las facturas:
+        1. Las facturas deberán ser expedidas en el momento de realizarse la operación.
+            No obstante, cuando el destinatario de la operación sea un empresario o profesional que
+            actúe como tal, las facturas deberán expedirse antes del día 16 del mes siguiente a aquél
+            en que se haya producido el devengo del Impuesto correspondiente a la citada operación.
+        2. En las entregas de bienes comprendidas en el artículo 75.Uno.8.º de la Norma Foral del
+            Impuesto sobre el Valor Añadido, las facturas deberán expedirse antes del día 16 del mes
+            siguiente a aquél en que se inicie la expedición o el transporte de los bienes con destino al
+            adquirente.
+        Es igual en todas las diputaciones forales
+        """
+        for record in self:
+            if record.type in ('out_invoice', 'out_refund') and \
+                record.tbai_enabled:
+                    date_invoice = fields.Date.from_string(record.date_invoice) if record.date_invoice else date.today()
+                    operation_date = fields.Date.from_string(record.date) if record.date else date.today()
+                    if operation_date == date_invoice:
+                        continue
+                    elif operation_date > date_invoice:
+                        raise exceptions.ValidationError(
+                            _('The operation date cannot be greater than the invoice date.')
+                        )
+                    else:
+                        limit_date_invoice = (operation_date + relativedelta(months=1)).replace(day=16)
+                        if date_invoice >= limit_date_invoice:
+                            raise exceptions.ValidationError(
+                                _("""The invoice date violates Art.11 del Reglamento de facturación.
+                                The limit invoice date taking into account the operation date (%s) is %s""" % 
+                                (record.date, fields.Date.to_string(limit_date_invoice),))
+                            )
 
     @api.multi
     def unlink(self):
@@ -351,6 +388,22 @@ class AccountInvoice(models.Model):
         return super().action_cancel()
 
     @api.multi
+    def _set_invoice_date_today(self):
+        # Establecemos la fecha de hoy para las facturas emitidas a las que haya
+        #   que generar fichero tbai, ya sean normales o rectificativas
+        out_invoices = self.sudo().filtered(
+            lambda x: x.tbai_enabled
+            and x.type in ("out_invoice", "out_refund")
+        )
+        out_invoices.write({"date_invoice": fields.Date.today()})
+        out_invoices.action_date_assign()
+
+    @api.multi
+    def action_invoice_open(self):
+        self._set_invoice_date_today()
+        return super().action_invoice_open()
+
+    @api.multi
     def invoice_validate(self):
 
         def validate_refund_invoices():
@@ -387,17 +440,23 @@ class AccountInvoice(models.Model):
         #  but a normal customer invoice.
         # There is no 'by substitution' credit note, only 'by differences'.
         tbai_invoices = self.sudo().env['account.invoice']
+        # Segun pregunta nº 238 de batuz.eus: ¿Cuál es el criterio temporal para anotar las factura emitidas y recibidas en el LROE?
+        # En cuanto a las facturas emitidas, estas se tendrán que anotar en el LROE del año correspondiente a su fecha de expedición.
+        # En cuanto a las facturas recibidas, estas se tendrán que anotar en el LROE del año correspondiente a su fecha de recepción,
+        #   entendida esta fecha como aquella a partir de la cual la persona contribuyente está en posesión del documento justificativo
+        #   de su derecho a deducir el IVA soportado (artículo 97 de la Norma Foral del IVA).
+        # Por tanto, comparamos con date_invoice y no con date
         tbai_invoices |= self.sudo().filtered(
             lambda x:
             x.tbai_enabled and 'out_invoice' == x.type and
-            x.date and x.date >= x.journal_id.tbai_active_date)
+            x.date_invoice and x.date_invoice >= x.journal_id.tbai_active_date)
         refund_invoices = \
             self.sudo().filtered(
                 lambda x:
                 x.tbai_enabled and 'out_refund' == x.type and
                 (not x.tbai_refund_type or
                  x.tbai_refund_type == RefundType.differences.value) and
-                x.date and x.date >= x.journal_id.tbai_active_date)
+                x.date_invoice and x.date_invoice >= x.journal_id.tbai_active_date)
 
         validate_refund_invoices()
         tbai_invoices |= refund_invoices
@@ -439,7 +498,7 @@ class AccountInvoice(models.Model):
         return self.split_invoice_number()[1]
 
     def tbai_get_value_fecha_expedicion_factura(self):
-        invoice_date = self.date or self.date_invoice
+        invoice_date = self.date_invoice
         date = fields.Datetime.context_timestamp(self, fields.Datetime.from_string(
             invoice_date))
         return date.strftime("%d-%m-%Y")
@@ -472,17 +531,11 @@ class AccountInvoice(models.Model):
         return "%.2f" % amount
 
     def tbai_get_value_fecha_operacion(self):
-        if self.tbai_date_operation:
+        tbai_date_operation = None
+        if self.date != self.date_invoice:
             tbai_date_operation = datetime.strptime(
-                self.tbai_date_operation, DEFAULT_SERVER_DATETIME_FORMAT).strftime(
+                self.date, DEFAULT_SERVER_DATE_FORMAT).strftime(
                 "%d-%m-%Y")
-            date_invoice = datetime.strptime(
-                self.date or self.date_invoice, DEFAULT_SERVER_DATE_FORMAT).strftime(
-                "%d-%m-%Y")
-            if tbai_date_operation == date_invoice:
-                tbai_date_operation = None
-        else:
-            tbai_date_operation = None
         return tbai_date_operation
 
     def tbai_get_value_retencion_soportada(self):
