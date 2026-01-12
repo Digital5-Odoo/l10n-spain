@@ -780,7 +780,13 @@ class AccountMove(models.Model):
             and x.date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
-            if lroe_invoice.lroe_state in (
+            # Si el estado del LROE es cancelado el siguiente envío tiene que
+            # ser de tipo "Crear" (AO=), ya que se ha cancelado y en hacienda ya no existe.
+            # Da igual que tenga estados previos en recorded. Esto permite cancelar una
+            # factura de proveedor para poder cambiar posteriormente la ref. de factura
+            if lroe_invoice.lroe_state == "cancel":
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
+            elif lroe_invoice.lroe_state in (
                 "recorded",
                 "recorded_modified",
                 "cancel_modified",
@@ -788,7 +794,7 @@ class AccountMove(models.Model):
                 lambda x: x.state == "recorded"
             ):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
-            elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
+            elif lroe_invoice.lroe_state in ("not_sent", "error"):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
 
     # LROE STATE MANAGEMENT
@@ -875,7 +881,13 @@ class AccountMove(models.Model):
             and x.date >= x.journal_id.tbai_active_date
         )
         for lroe_invoice in lroe_invoices:
-            if lroe_invoice.lroe_state in (
+            # Si el estado del LROE es cancelado el siguiente envío tiene que
+            # ser de tipo "Crear" (AO=), ya que se ha cancelado y en hacienda ya no existe.
+            # Da igual que tenga estados previos en recorded. Esto permite cancelar una
+            # factura de proveedor para poder cambiar posteriormente la ref. de factura
+            if lroe_invoice.lroe_state == "cancel":
+                lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
+            elif lroe_invoice.lroe_state in (
                 "recorded",
                 "recorded_modified",
                 "cancel_modified",
@@ -883,7 +895,7 @@ class AccountMove(models.Model):
                 lambda x: x.state == "recorded"
             ):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="M00")
-            elif lroe_invoice.lroe_state in ("not_sent", "cancel", "error"):
+            elif lroe_invoice.lroe_state in ("not_sent", "error"):
                 lroe_invoices._prepare_invoice_for_lroe(operation_type="A00")
         return res
 
