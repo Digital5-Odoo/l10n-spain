@@ -552,7 +552,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
 
         self._set_invoice_date_today()
         res = super()._post(soft)
-        tbai_invoices = self.sudo().env["account.move"]
+        pending_tbai_moves = self.sudo().env["account.move"]
         # Segun pregunta nº 238 de batuz.eus: ¿Cuál es el criterio temporal para anotar
         #   las factura emitidas y recibidas en el LROE?
         # En cuanto a las facturas emitidas, estas se tendrán que anotar en el LROE
@@ -563,7 +563,7 @@ The limit invoice date taking into account the operation date (%s) is %s"""
         #   documento justificativo de su derecho a deducir el IVA soportado
         #   (artículo 97 de la Norma Foral del IVA).
         # Por tanto, comparamos con invoice_date y no con date
-        tbai_invoices |= self.sudo().filtered(
+        pending_tbai_moves |= self.sudo().filtered(
             lambda x: x.tbai_enabled
             and "out_invoice" == x.move_type
             and x.tbai_send_invoice
