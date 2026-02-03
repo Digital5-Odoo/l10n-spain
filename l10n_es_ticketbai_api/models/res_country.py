@@ -249,3 +249,4 @@ class CountryCode(tbai_utils.EnumValues):
     XB = "XB"
     XU = "XU"
     XN = "XN"
+    EL = "EL"
