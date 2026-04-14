@@ -807,16 +807,60 @@ class TicketBAIInvoice(models.Model):
         """
         tbai_exempted_taxes = self.get_exempted_taxes()
         res = []
+        taxes_dict = OrderedDict()
         if 7 < len(tbai_exempted_taxes):
             raise exceptions.ValidationError(_(
                 "TicketBAI Invoice %s: Max. number of exempted taxes is 7!"
             ) % self.name)
         for tax in tbai_exempted_taxes:
+            if tax.exempted_cause not in taxes_dict:
+                taxes_dict[tax.exempted_cause] = round(float(tax.base), 2)
+            else:
+                taxes_dict[tax.exempted_cause] = round(taxes_dict[tax.exempted_cause] + float(tax.base), 2)
+        for exempted_cause, base in taxes_dict.items():
             res.append(OrderedDict([
-                ("CausaExencion", tax.exempted_cause),
-                ("BaseImponible", tax.base)
+                ("CausaExencion", exempted_cause),
+                ("BaseImponible", str(base))
             ]))
         return res
+    
+    def group_by_tax_amount(self, tax_detail):
+        taxes_dict = OrderedDict()
+        iva = []
+        group = False
+        
+        if tax_detail.get("DesgloseIVA", False) and tax_detail.get("DesgloseIVA").get("DetalleIVA", False):
+            # Comprobamos si existen varias líneas con el mismo tipo impositivo
+            for iva_detail in tax_detail["DesgloseIVA"]["DetalleIVA"]:
+                if iva_detail["TipoImpositivo"] not in iva:
+                    iva.append(iva_detail["TipoImpositivo"])
+                else:
+                    group = True
+                    break
+            
+            # Comprobamos si hay que agrupar
+            if group:
+                for iva_detail in tax_detail["DesgloseIVA"]["DetalleIVA"]:
+                    datakey = (iva_detail["TipoImpositivo"], iva_detail.get("OperacionEnRecargoDeEquivalenciaORegimenSimplificado", 'N'))
+                    if datakey not in taxes_dict:
+                        # Introducimos los valores del primer elemento
+                        values = OrderedDict()
+                        for key, item in iva_detail.items():
+                            values[key] = item
+                        taxes_dict[datakey] =  values
+                    else:
+                        taxes_dict[datakey]["BaseImponible"] = str(round(float(taxes_dict[datakey]["BaseImponible"]) + float(iva_detail["BaseImponible"]), 2))
+                        taxes_dict[datakey]["CuotaImpuesto"] = str(round(float(taxes_dict[datakey]["CuotaImpuesto"]) + float(iva_detail["CuotaImpuesto"]), 2))
+            
+                # Una vez agrupados los impuestos reconstruimos el diccionario
+                new_iva_detail = []
+                for data in taxes_dict.values():
+                    new_iva_detail.append(OrderedDict(data))
+                    
+                # Asignamos los nuevos valores agrupados
+                tax_detail["DesgloseIVA"]["DetalleIVA"] = new_iva_detail
+
+        return tax_detail
 
     def build_detalle_no_exenta(self):
         """ V 1.2
@@ -876,8 +920,10 @@ class TicketBAIInvoice(models.Model):
                     tax_details
                 )
         if not_exempted_taxes_isp:
+            not_exempted_taxes_isp = self.group_by_tax_amount(not_exempted_taxes_isp)
             res.append(not_exempted_taxes_isp)
         if not_exempted_taxes_not_isp:
+            not_exempted_taxes_not_isp = self.group_by_tax_amount(not_exempted_taxes_not_isp)
             res.append(not_exempted_taxes_not_isp)
         return res
 
@@ -893,14 +939,21 @@ class TicketBAIInvoice(models.Model):
         """
         not_subject_to_taxes = self.get_not_subject_to_taxes()
         res = []
+        taxes_dict = OrderedDict()
         if 2 < len(not_subject_to_taxes):
             raise exceptions.ValidationError(_(
                 "TicketBAI Invoice %s: Max. number of not subject to taxes is 2!"
             ) % self.name)
+        # Agrupamos las exenciones para evitar error en hacienda por tener exención repetida
         for tax in not_subject_to_taxes:
+            if tax.not_subject_to_cause not in taxes_dict:
+                taxes_dict[tax.not_subject_to_cause] = round(float(tax.base), 2)
+            else:
+                taxes_dict[tax.not_subject_to_cause] = round(taxes_dict[tax.not_subject_to_cause] + float(tax.base), 2)
+        for not_subject_to_cause, base in taxes_dict.items():
             res.append(OrderedDict([
-                ("Causa", tax.not_subject_to_cause),
-                ("Importe", tax.base)
+                ("Causa", not_subject_to_cause),
+                ("Importe", str(base))
             ]))
         return res
 
