@@ -1,19 +1,25 @@
 # Copyright 2013 - Guadaltech - Alberto Martín Cortada
 # Copyright 2015 - AvanzOSC - Ainara Galdona
 # Copyright 2016 Tecnativa - Antonio Espinosa
-# Copyright 2014-2019 Tecnativa - Pedro M. Baeza
+# Copyright 2014-2021 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import api, exceptions, fields, models, _
+from odoo.tools import float_compare
 
 _ACCOUNT_PATTERN_MAP = {
-    'C': '4700',
-    'D': '4700',
-    'N': '4700',
-    'I': '4750',
+    "C": "4700",
+    "D": "4700",
+    "V": "4700",
+    "X": "4700",
+    "N": "4700",
+    "I": "4750",
+    "G": "4750",
+    "U": "4750",
 }
 
 NON_EDITABLE_ON_DONE = {'done': [('readonly', True)]}
+EDITABLE_ON_DRAFT = {'draft': [('readonly', False)]}
 
 
 class L10nEsAeatMod303Report(models.Model):
@@ -31,7 +37,16 @@ class L10nEsAeatMod303Report(models.Model):
     devolucion_mensual = fields.Boolean(
         string="Montly Return",
         states=NON_EDITABLE_ON_DONE,
-        help="Registered in the Register of Monthly Return")
+        help="Registered in the Register of Monthly Return",
+    )
+    return_last_period = fields.Boolean(
+        string="Last Period Return",
+        states=NON_EDITABLE_ON_DONE,
+        help="Check if you are submitting the last period return",
+        compute="_compute_return_last_period",
+        store=True,
+        readonly=False,
+    )
     total_devengado = fields.Float(
         string="[27] VAT payable", readonly=True, compute_sudo=True,
         compute='_compute_total_devengado', store=True)
@@ -68,6 +83,9 @@ class L10nEsAeatMod303Report(models.Model):
     regularizacion_anual = fields.Float(
         string="[68] Annual regularization",
         states=NON_EDITABLE_ON_DONE,
+        compute="_compute_regularizacion_anual",
+        readonly=False,
+        store=True,
         help="In the last auto settlement of the year, shall be recorded "
              "(the fourth period or 12th month), with the appropriate sign, "
              "the result of the annual adjustment as have the laws by the "
@@ -92,15 +110,32 @@ class L10nEsAeatMod303Report(models.Model):
              "exercise and period",
         states=NON_EDITABLE_ON_DONE)
     resultado_liquidacion = fields.Float(
-        string="[71] Settlement result", readonly=True,
-        compute='_compute_resultado_liquidacion', store=True)
+        string="[71] Settlement result",
+        readonly=True,
+        compute="_compute_resultado_liquidacion",
+        store=True,
+    )
+    use_aeat_account = fields.Boolean(
+        "Usar cuenta corriente tributaria",
+        help=(
+            "Si está suscrito a la cuenta corriente en materia tributaria, "
+            "active esta opción para usarla en el ingreso o devolución."
+        ),
+    )
     result_type = fields.Selection(
         selection=[
-            ('I', 'To enter'),
-            ('D', 'To return'),
-            ('C', 'To compensate'),
-            ('N', 'No activity/Zero result'),
-        ], string="Result type", compute='_compute_result_type')
+            ("I", "To enter"),
+            ("G", "To enter - AEAT account"),
+            ("U", "To enter - Bank account debit"),
+            ("D", "To return"),
+            ("V", "To return - AEAT account"),
+            ("X", "To return - Foreign bank account"),
+            ("C", "To compensate"),
+            ("N", "No activity/Zero result"),
+        ],
+        string="Result type",
+        compute="_compute_result_type",
+    )
     counterpart_account_id = fields.Many2one(
         comodel_name='account.account', string="Counterpart account",
         default=_default_counterpart_303,
@@ -114,7 +149,8 @@ class L10nEsAeatMod303Report(models.Model):
         ],
         default='2',
         required=True,
-        states=NON_EDITABLE_ON_DONE,
+        readonly=True,
+        states=EDITABLE_ON_DRAFT,
         string=u"Exonerado mod. 390",
         help=u"Exonerado de la Declaración-resumen anual del IVA, modelo 390: "
              u"Volumen de operaciones (art. 121 LIVA)",
@@ -122,7 +158,8 @@ class L10nEsAeatMod303Report(models.Model):
     has_operation_volume = fields.Boolean(
         string=u"¿Volumen de operaciones?",
         default=True,
-        states=NON_EDITABLE_ON_DONE,
+        readonly=True,
+        states=EDITABLE_ON_DRAFT,
         help=u"¿Existe volumen de operaciones (art. 121 LIVA)?",
     )
     has_347 = fields.Boolean(
@@ -228,13 +265,21 @@ class L10nEsAeatMod303Report(models.Model):
         ],
         compute='_compute_marca_sepa')
 
-    @api.depends("partner_bank_id", "result_type")
+    def _get_export_config(self, date):
+        # Force the configuration of 2024-10 for 2024/09, as it can't be obtained with
+        # the usual dates search
+        if self.period_type == "3T" and self.year == 2024:
+            return self.env.ref(
+                "l10n_es_aeat_mod303.aeat_mod303_2024_10_main_export_config"
+            )
+        return super()._get_export_config(date)
+
+    @api.depends("partner_bank_id", "use_aeat_account")
     def _compute_marca_sepa(self):
         for record in self:
-            if record.result_type != 'D':
-                record.marca_sepa = '0'
-            elif record.partner_bank_id.bank_id.country == \
-                    self.env.ref("base.es"):
+            if record.use_aeat_account:
+                record.marca_sepa = "0"
+            elif record.partner_bank_id.bank_id.country == self.env.ref("base.es"):
                 record.marca_sepa = "1"
             elif record.partner_bank_id.bank_id.country in \
                     self.env.ref("base.europe").country_ids:
@@ -258,8 +303,8 @@ class L10nEsAeatMod303Report(models.Model):
                 continue
             prev_report = min(
                 prev_reports, key=lambda x: abs(
-                    fields.Date.from_string(x.date_end) -
-                    fields.Date.from_string(mod303.date_start)
+                    fields.Date.to_date(x.date_end) -
+                    fields.Date.to_date(mod303.date_start)
                 ),
             )
             if prev_report.result_type == 'C' and not mod303.cuota_compensar:
@@ -273,14 +318,41 @@ class L10nEsAeatMod303Report(models.Model):
                     "field '[67] Fees to compensate' in this declaration."
                 )
 
-    @api.multi
-    @api.depends('tax_line_ids', 'tax_line_ids.amount')
+    @api.depends("company_id", "result_type")
+    def _compute_counterpart_account_id(self):
+        for record in self:
+            code = ("%s%%" % _ACCOUNT_PATTERN_MAP.get(record.result_type, "4750"),)
+            record.counterpart_account_id = self.env["account.account"].search(
+                [("code", "=like", code[0]), ("company_id", "=", record.company_id.id)],
+                limit=1,
+            )
+
+    @api.depends("period_type")
+    def _compute_regularizacion_anual(self):
+        for record in self:
+            if record.period_type not in ("4T", "12"):
+                record.regularizacion_anual = 0
+
+    @api.depends("period_type")
+    def _compute_exonerated_390(self):
+        for record in self:
+            if record.period_type not in ("4T", "12"):
+                record.exonerated_390 = "2"
+
+    @api.depends("period_type")
+    def _compute_return_last_period(self):
+        for record in self:
+            if record.period_type not in ("4T", "12"):
+                record.return_last_period = False
+
+    @api.depends("tax_line_ids", "tax_line_ids.amount")
     def _compute_total_devengado(self):
-        casillas_devengado = (152, 3, 155, 6, 9, 11, 13, 15, 158, 18, 21, 24, 26)
+        cells = (152, 167, 3, 155, 6, 9, 11, 13, 15, 158, 170, 18, 21, 24, 26)
         for report in self:
-            tax_lines = report.tax_line_ids.filtered(
-                lambda x: x.field_number in casillas_devengado)
-            report.total_devengado = sum(tax_lines.mapped('amount'))
+            tax_lines = report.tax_line_ids.filtered(lambda x: x.field_number in cells)
+            report.total_devengado = report.currency_id.round(
+                sum(tax_lines.mapped("amount"))
+            )
 
     @api.multi
     @api.depends('tax_line_ids', 'tax_line_ids.amount')
@@ -349,20 +421,38 @@ class L10nEsAeatMod303Report(models.Model):
 
     @api.multi
     @api.depends(
-        'resultado_liquidacion',
-        'period_type',
-        'devolucion_mensual',
+        "resultado_liquidacion",
+        "period_type",
+        "devolucion_mensual",
+        "marca_sepa",
+        "use_aeat_account",
+        "return_last_period",
     )
     def _compute_result_type(self):
         for report in self:
-            if report.resultado_liquidacion == 0:
-                report.result_type = 'N'
-            elif report.resultado_liquidacion > 0:
-                report.result_type = 'I'
+            result = float_compare(
+                report.resultado_liquidacion,
+                0,
+                precision_digits=report.currency_id.decimal_places,
+            )
+            if result == 0:
+                report.result_type = "N"
+            elif result == 1:
+                if report.use_aeat_account:
+                    report.result_type = "G"
+                elif report.marca_sepa in {"1", "2"}:
+                    # Domiciliar ingreso porque se indicó un banco SEPA
+                    report.result_type = "U"
+                else:
+                    report.result_type = "I"
             else:
-                if (report.devolucion_mensual or
-                        report.period_type in ('4T', '12')):
-                    report.result_type = 'D'
+                if report.devolucion_mensual or report.period_type in ("4T", "12"):
+                    if report.use_aeat_account:
+                        report.result_type = "V"
+                    elif report.return_last_period or report.devolucion_mensual:
+                        report.result_type = "D" if report.marca_sepa == "1" else "X"
+                    else:
+                        report.result_type = "C"
                 else:
                     report.result_type = 'C'
 
@@ -446,8 +536,8 @@ class L10nEsAeatMod303Report(models.Model):
         `_get_tax_lines`.
         """
         if 79 <= map_line.field_number <= 99 or map_line.field_number == 125:
-            date_start = date_start[:4] + '-01-01'
-            date_end = date_end[:4] + '-12-31'
+            date_start = date_start.replace(day=1, month=1)
+            date_end = date_end.replace(day=31, month=12)
         return super(L10nEsAeatMod303Report, self)._get_move_line_domain(
             codes, date_start, date_end, map_line,
         )
@@ -456,9 +546,22 @@ class L10nEsAeatMod303Report(models.Model):
 class L10nEsAeatMod303ReportActivityCode(models.Model):
     _name = "l10n.es.aeat.mod303.report.activity.code"
     _order = "period_type,code,id"
+    _description = "AEAT 303 Report Activities Codes"
 
-    period_type = fields.Selection(selection=[("4T", "4T"), ("12", "December")])
-    code = fields.Char(string="Activity code", required=True)
-    name = fields.Char(string="Activity name", translate=True, required=True,)
+    period_type = fields.Selection(
+        selection=[
+            ('4T', '4T'),
+            ('12', 'December'),
+        ],
+    )
+    code = fields.Char(
+        string="Activity code",
+        required=True,
+    )
+    name = fields.Char(
+        string="Activity name",
+        translate=True,
+        required=True,
+    )
     date_start = fields.Date(string="Starting date")
     date_end = fields.Date(string="Ending date")
