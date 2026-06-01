@@ -9,6 +9,17 @@
             <field name="model">account.invoice</field>
             <field name="inherit_id" ref="account.invoice_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//field[@name='date_invoice']" position="attributes">
+                    <attribute name="attrs">{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('tbai_invoice_issuer', '=', 'N'), '&amp;', ('tbai_send_invoice', '=', True), '&amp;', ('type', 'in', ('out_invoice', 'out_refund')), ('tbai_enabled', '=', True)]}</attribute>
+                </xpath>
+                <xpath expr="//field[@name='date_invoice']" position="after">
+                    <div colspan="2" attrs="{'invisible': ['|', ('tbai_send_invoice', '=', False), '|', ('state', '!=', 'draft'), ('type', 'not in', ('out_invoice', 'out_refund'))]}">
+                        <p class="alert alert-warning">La fecha de factura se auto-asignará en el momento de confirmación.</p>
+                    </div>
+                    <field name="date" string="Operation Date" attrs="{'readonly': [('state', '!=', 'draft')]}"
+                        help="Keep empty to use the current date" />
+                        <field name="tbai_invoice_issuer" attrs="{'invisible': [('tbai_invoice_issuer', '=', 'N')]}" />
+                </xpath>
                 <xpath expr="//field[@name='tax_line_ids']/tree/field[@name='amount']" position="before">
                     <field name="tbai_vat_exemption_key" attrs="{'column_invisible': [('parent.tbai_enabled', '=', False)]}"
                            options="{'no_open':True,'no_create':True}"/>
@@ -23,7 +34,6 @@
                                        attrs="{'invisible': [('tbai_invoice_id', '=', False)]}"/>
                                 <field name="tbai_cancellation_id" readonly="1" options="{'no_create':True}"
                                        attrs="{'invisible': [('tbai_cancellation_id', '=', False)]}"/>
-                                <field name="tbai_date_operation" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
                                 <field name="tbai_description_operation" widget="char" attrs="{'required': [('tbai_enabled', '=', True)], 'readonly': [('state', '!=', 'draft')]}"/>
                             </group>
                         </group>
