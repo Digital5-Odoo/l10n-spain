@@ -9,6 +9,7 @@ from odoo.addons.l10n_es_ticketbai_api.models.ticketbai_invoice_tax import (
     NotSubjectToCause,
     TicketBaiTaxType,
 )
+from odoo.tools import float_is_zero
 
 
 class AccountTax(models.Model):
@@ -179,8 +180,12 @@ class AccountTax(models.Model):
             sign = -1
         else:
             sign = 1
+        currency_id = invoice_id.currency_id or invoice_id.company_id.currency_id
         amount_total = self.tbai_get_amount_total_company(invoice_id)
-        return "%.2f" % (sign * amount_total)
+        if not float_is_zero(amount_total, precision_digits=currency_id.decimal_places):
+            return "%.2f" % (sign * amount_total)
+        else:  # no minus zero, it is rejected
+            return "%.2f" % amount_total
 
     def tbai_get_value_tipo_recargo_equiv(self, invoice_id):
         re_invoice_tax = self.tbai_get_associated_re_tax(invoice_id)
