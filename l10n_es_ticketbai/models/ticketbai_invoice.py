@@ -95,30 +95,3 @@ class TicketBAIInvoiceRefundOrigin(models.Model):
             tbai_utils.check_date(_(
                 "Refunded Invoice %s Expedition Date"
             ) % record.number, record.expedition_date)
-
-    @api.multi
-    @api.constrains('number', 'number_prefix', 'expedition_date')
-    def _check_account_invoice_exists(self):
-        for record in self:
-            invoice_number = ''
-            if record.number_prefix:
-                invoice_number = record.number_prefix
-            if record.number:
-                invoice_number += record.number
-            if invoice_number and record.expedition_date:
-                record._check_expedition_date()
-                invoice_date = datetime.strptime(record.expedition_date,
-                                                 "%d-%m-%Y")
-                date_invoice = invoice_date.date().strftime('%Y-%m-%d')
-                domain_invoice = [('number', '=', invoice_number),
-                                  ('date_invoice', '=', date_invoice)
-                                  ]
-                account_invoice = self.sudo() \
-                    .env['account.invoice'] \
-                    .search(domain_invoice)
-                if account_invoice:
-                    raise exceptions.ValidationError(_(
-                        "Invoice: number %s prefix %s invoice_date %s exists. Create a "
-                        "credit note from this invoice."
-                    ) % (record.number, record.number_prefix,
-                         record.expedition_date))
