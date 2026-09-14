@@ -105,10 +105,22 @@ class AccountInvoice(models.Model):
             Impuesto sobre el Valor Añadido, las facturas deberán expedirse antes del día 16 del mes
             siguiente a aquél en que se inicie la expedición o el transporte de los bienes con destino al
             adquirente.
-        Es igual en todas las diputaciones forales
+        
+        Es igual en todas las diputaciones forales.
+        
+        Lo anterior solo es aplicable para las facturas ordinarias. Las facturas rectificativas se rigen por el
+        Árticulo 15, disponible también en el mismo decreto, donde se especifica lo siguiente:
+        
+         3. La expedición de la factura rectificativa deberá efectuarse tan pronto como el
+            obligado a expedirla tenga constancia de las circunstancias que, conforme a los
+            apartados anteriores, obligan a su expedición, siempre que no hubiesen
+            transcurrido cuatro años a partir del momento en que se devengó el impuesto o,
+            en su caso, se produjeron las circunstancias a que se refiere el artículo 80 del
+            Decreto Foral 102/1992, de 29 de diciembre, de adaptación de la Ley del
+            Impuesto sobre el Valor Añadido.
         """
         for record in self:
-            if record.type in ('out_invoice', 'out_refund') and \
+            if record.type == 'out_invoice' and \
                 record.tbai_enabled:
                     date_invoice = record.date_invoice or fields.Date.today()
                     operation_date = record.date if record.date else fields.Date.today()
@@ -123,8 +135,8 @@ class AccountInvoice(models.Model):
                         if date_invoice >= limit_date_invoice:
                             raise exceptions.ValidationError(
                                 _("""The invoice date violates Art.11 del Reglamento de facturación.
-                                The limit invoice date taking into account the operation date (%s) is %s""" % 
-                                (record.date, fields.Date.to_string(limit_date_invoice),))
+                                The limit invoice date taking into account the operation date (%s) is %s""") %
+                                (record.date, fields.Date.to_string(limit_date_invoice),)
                             )
 
     @api.model
