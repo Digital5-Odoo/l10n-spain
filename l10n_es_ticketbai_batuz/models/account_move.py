@@ -301,10 +301,10 @@ class AccountMove(models.Model):
                         )
                     )
 
-                    origins.append(
-                        ("IDFacturaRectificadaSustituida", OrderedDict(vals)),
-                    )
-                header["FacturasRectificadasSustituidas"] = OrderedDict(origins)
+                    origins.append(OrderedDict(vals))
+                header["FacturasRectificadasSustituidas"] = OrderedDict(
+                    [("IDFacturaRectificadaSustituida", origins)]
+                )
 
         return header
 
