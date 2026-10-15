@@ -11,6 +11,7 @@
             ref('l10n_es.account_tax_template_s_iva21b'),
             ref('l10n_es.account_tax_template_s_iva4b'),
             ref('l10n_es.account_tax_template_s_iva10b'),
+            ref('l10n_es.account_tax_template_s_iva0b'),
         ])]"
         />
         <field name="name">Bienes</field>
@@ -70,6 +71,7 @@
             ref('l10n_es.account_tax_template_s_iva10s'),
             ref('l10n_es.account_tax_template_s_iva4s'),
             ref('l10n_es.account_tax_template_s_iva5s'),
+            ref('l10n_es.account_tax_template_s_iva0s'),
         ])]"
         />
         <field name="name">Servicios</field>
